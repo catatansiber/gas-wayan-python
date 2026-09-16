@@ -12,7 +12,9 @@ COPY requirements.txt ./
 RUN python -m pip install --no-cache-dir --require-hashes -r requirements.txt
 
 COPY --chown=django:django . .
-RUN chmod +x /app/scripts/start_railway.sh
+RUN mkdir -p /app/staticfiles \
+    && chown -R django:django /app \
+    && chmod +x /app/scripts/start_railway.sh
 
 USER django
 
