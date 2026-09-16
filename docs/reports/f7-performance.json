@@ -1,0 +1,44 @@
+{
+  "generated_at": "2026-09-16T11:30:07",
+  "synthetic_volume": {
+    "cylinders": 3000,
+    "customers": 300,
+    "cycles": 20000,
+    "lifecycle_events": 40000
+  },
+  "samples_per_measurement": 30,
+  "note": "Timing in-process (Django test Client, satu proses) - BUKAN latency jaringan produksi. Target p95 (cari<=1s, command<=2s) belum disahkan, dicatat sebagai referensi, bukan kelulusan.",
+  "measurements": {
+    "search_exact_serial": {
+      "p50_ms": 5.7,
+      "p95_ms": 9.4,
+      "max_ms": 22.4,
+      "min_ms": 4.6
+    },
+    "search_by_customer_listing": {
+      "p50_ms": 27.8,
+      "p95_ms": 38.9,
+      "max_ms": 47.7,
+      "min_ms": 20.3
+    },
+    "usage_log_listing": {
+      "p50_ms": 8.4,
+      "p95_ms": 13.6,
+      "max_ms": 14.4,
+      "min_ms": 7.6
+    },
+    "cylinder_detail": {
+      "p50_ms": 8.7,
+      "p95_ms": 11.4,
+      "max_ms": 12.2,
+      "min_ms": 8.0
+    },
+    "mutation_dispatch_and_return": {
+      "p50_ms": 17.5,
+      "p95_ms": 23.8,
+      "max_ms": 24.2,
+      "min_ms": 14.7,
+      "note": "dispatch+return berpasangan (2 mutasi) per sampel"
+    }
+  }
+}

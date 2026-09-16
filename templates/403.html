@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Akses ditolak - Gas Wayan{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Akses ditolak</h1>
+  <p class="error">Role Anda tidak memiliki izin untuk membuka halaman ini.</p>
+  <p><a href="{% url 'identity:dashboard' %}">Kembali ke dashboard</a></p>
+</div>
+{% endblock %}

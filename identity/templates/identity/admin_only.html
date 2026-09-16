@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Khusus Admin - Gas Wayan{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Halaman khusus Admin</h1>
+  <p>Anda melihat halaman ini karena role Anda adalah {{ user.role }}.</p>
+  <p><a href="{% url 'identity:dashboard' %}">Kembali ke dashboard</a></p>
+</div>
+{% endblock %}

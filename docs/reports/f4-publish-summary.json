@@ -1,0 +1,16 @@
+{
+  "raw_rows_total": 11137,
+  "blank_rows_total": 540,
+  "staging_rows_total": 10597,
+  "staging_by_publish_outcome": {
+    "PUBLISHED": 56,
+    "PENDING_REVIEW": 10541,
+    "EXCLUDED_APPROVED": 0
+  },
+  "reconciliation_sum": 10597,
+  "reconciliation_ok": true,
+  "source_links_total": 56,
+  "import_lifecycle_events_total": 112,
+  "orphan_import_events_count": 0,
+  "orphan_import_events": []
+}

@@ -1,0 +1,4 @@
+# Dependency tambahan untuk development/lint/CI. Runtime dependency tetap di requirements.in.
+-c requirements.txt
+pip-tools==7.6.1
+ruff==0.16.7

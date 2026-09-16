@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Gas Wayan{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Selamat datang, {{ user.username }}</h1>
+  <p>Role: <span class="role-badge">{{ user.role }}</span></p>
+  <p>Tabung sedang dikirim dan belum kembali: <strong>{{ out_count }}</strong></p>
+  <p>Pilih salah satu menu di navigasi atas untuk mencari tabung, mengirim/mengembalikan, atau mengelola data.</p>
+  <p><a href="{% url 'operations:search' %}" class="btn">Cari tabung</a></p>
+  {% if user.role == 'ADMIN' %}<p><a href="{% url 'identity:user-roles' %}">Kelola role akun</a></p>{% endif %}
+</div>
+{% endblock %}

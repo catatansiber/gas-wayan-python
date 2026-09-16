@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+db.sqlite3
+*.log
+docs/reports/*.json
+!docs/reports/f0-audit-raw.json
+!docs/reports/f3-import-summary.json
+docs/reports/f3-local/
+!docs/reports/f4-publish-summary.json
+.ruff_cache/
+staticfiles/
+*.dump
+!docs/reports/f7-performance.json

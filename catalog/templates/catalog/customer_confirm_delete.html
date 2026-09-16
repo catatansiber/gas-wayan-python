@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Hapus pelanggan/relasi - Gas Wayan{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Hapus pelanggan/relasi</h1>
+  <p>Hapus <strong>{{ customer.display_name }}</strong>?</p>
+  <p class="help-text">Pelanggan yang sudah memiliki transaksi tidak dapat dihapus; nonaktifkan sebagai gantinya.</p>
+  <form method="post">{% csrf_token %}<button type="submit">Hapus</button> <a class="btn secondary" href="{% url 'catalog:customers' %}">Batal</a></form>
+</div>
+{% endblock %}

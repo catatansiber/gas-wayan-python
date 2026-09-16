@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Gas Wayan{% endblock %}</title>
+  <style>
+    :root {
+      --border: #ddd;
+      --error: #b00020;
+      --success: #1a7a2e;
+      --muted: #666;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 0 1rem 2rem;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .container.narrow { max-width: 480px; }
+    nav.topnav {
+      display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+      padding: 0.75rem 0; margin-bottom: 1rem; border-bottom: 1px solid var(--border);
+    }
+    nav.topnav a { color: #1a1a1a; text-decoration: none; font-size: 0.9rem; }
+    nav.topnav a:hover { text-decoration: underline; }
+    nav.topnav .spacer { flex: 1; }
+    details.account-menu { position: relative; }
+    details.account-menu summary { cursor: pointer; list-style: none; }
+    details.account-menu summary::-webkit-details-marker { display: none; }
+    .account-menu-content { position: absolute; right: 0; z-index: 1; min-width: 140px; padding: 0.5rem; background: #fff; border: 1px solid var(--border); border-radius: 6px; }
+    .card { border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; background: #fff; margin-bottom: 1rem; }
+    label { display: block; margin-top: 0.75rem; font-weight: 600; }
+    input[type="text"], input[type="password"], input[type="date"], select, textarea {
+      width: 100%; padding: 0.5rem; margin-top: 0.25rem; font-size: 1rem;
+    }
+    button, .btn {
+      margin-top: 1rem; padding: 0.6rem 1.2rem; cursor: pointer; border-radius: 6px;
+      border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 1rem;
+      display: inline-block; text-decoration: none;
+    }
+    .btn.secondary { background: #fff; color: #1a1a1a; }
+    .error { color: var(--error); }
+    .help-text { color: var(--muted); font-size: 0.85rem; }
+    .messages { list-style: none; padding: 0; margin: 0 0 1rem; }
+    .messages li { padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 0.5rem; }
+    .messages li.success { background: #e6f4ea; color: var(--success); }
+    .messages li.error { background: #fbe7e9; color: var(--error); }
+    .role-badge, .status-badge, .quality-badge {
+      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 4px; font-size: 0.8rem;
+    }
+    .role-badge { background: #eee; }
+    .status-AVAILABLE { background: #e6f4ea; color: var(--success); }
+    .status-OUT { background: #fff4e0; color: #8a5a00; }
+    .status-LOST { background: #fbe7e9; color: var(--error); }
+    .status-MAINTENANCE { background: #e7eefb; color: #1a4d8a; }
+    .status-RETIRED { background: #eee; color: var(--muted); }
+    .quality-badge { background: #fff4e0; color: #8a5a00; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 480px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 0.5rem; text-align: left; font-size: 0.9rem; }
+    th { background: #f2f2f2; }
+    .pagination { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pagination a, .pagination span { padding: 0.3rem 0.6rem; border: 1px solid var(--border); border-radius: 4px; text-decoration: none; color: #1a1a1a; }
+    .pagination .current { background: #1a1a1a; color: #fff; }
+    dl.preview { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; }
+    dl.preview dt { font-weight: 600; }
+    dl.preview dd { margin: 0; }
+    @media (max-width: 480px) {
+      body { padding: 0 0.5rem 1.5rem; }
+      dl.preview { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container{% block container_class %}{% endblock %}">
+    {% if user.is_authenticated %}
+    <nav class="topnav">
+      <a href="{% url 'identity:dashboard' %}">Dashboard</a>
+      <a href="{% url 'operations:search' %}">Cari tabung</a>
+      <a href="{% url 'operations:usage-log' %}">Log penggunaan</a>
+      {% if user.role == 'OPERATOR' or user.role == 'ADMIN' %}
+      <a href="{% url 'operations:dispatch' %}">Kirim</a>
+      <a href="{% url 'operations:return' %}">Kembali</a>
+      {% endif %}
+      {% if user.role == 'ADMIN' %}
+      <a href="{% url 'operations:exchange' %}">Tukar</a>
+      <a href="{% url 'operations:lost' %}">Hilang</a>
+      <a href="{% url 'operations:maintenance-start' %}">Maintenance</a>
+      <a href="{% url 'catalog:customers' %}">Pelanggan/relasi</a>
+      <a href="{% url 'catalog:gas-types' %}">Jenis gas</a>
+      <a href="{% url 'identity:user-roles' %}">Role akun</a>
+      {% endif %}
+      <span class="spacer"></span>
+      <details class="account-menu">
+        <summary>{{ user.username }} <span class="role-badge">{{ user.role }}</span></summary>
+        <div class="account-menu-content">
+          <form method="post" action="{% url 'identity:logout' %}" style="margin:0;">
+            {% csrf_token %}<button type="submit" class="btn secondary" style="margin:0;padding:0.3rem 0.7rem;">Keluar</button>
+          </form>
+        </div>
+      </details>
+    </nav>
+    {% endif %}
+
+    {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

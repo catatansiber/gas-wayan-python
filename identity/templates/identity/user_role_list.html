@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Kelola role akun - Gas Wayan{% endblock %}
+{% block content %}
+<div class="card table-wrap"><h1>Kelola role akun</h1><table><thead><tr><th>Username</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>
+{% for account in accounts %}<tr><td>{{ account.username }}{% if account.is_superuser %} <span class="help-text">(superadmin)</span>{% endif %}</td><td>{{ account.get_role_display }}</td><td>{% if account.is_active %}Aktif{% else %}Tidak aktif{% endif %}</td><td><a href="{% url 'identity:user-role-edit' account.id %}">Ubah</a></td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

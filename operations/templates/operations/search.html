@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Cari tabung - Gas Wayan{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Cari tabung</h1>
+  <form method="get">
+    <label for="id_serial_number">{{ form.serial_number.label }}</label>
+    {{ form.serial_number }}
+    <label for="id_customer">{{ form.customer.label }}</label>
+    {{ form.customer }}
+    <button type="submit">Cari</button>
+  </form>
+</div>
+
+{% if not_found_serial %}
+<div class="card">
+  <p class="error">Tabung dengan nomor tersebut tidak ditemukan.</p>
+</div>
+{% elif searched and page_obj.paginator.count == 0 %}
+<div class="card">
+  <p>Tidak ada hasil untuk pencarian ini.</p>
+</div>
+{% elif searched %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>Nomor tabung</th><th>Status</th><th>Kualitas data</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for cylinder in page_obj %}
+      <tr>
+        <td>{{ cylinder.serial_number }}</td>
+        <td><span class="status-badge status-{{ cylinder.status }}">{{ cylinder.status }}</span></td>
+        <td>
+          {% if cylinder.latest_cycle.data_quality_flag %}
+          <span class="quality-badge">{{ cylinder.latest_cycle.data_quality_flag }}</span>
+          {% else %}
+          <span class="help-text">-</span>
+          {% endif %}
+        </td>
+        <td><a href="{% url 'operations:cylinder-detail' cylinder.serial_number %}">Detail</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include "operations/_pagination.html" %}
+</div>
+{% endif %}
+{% endblock %}

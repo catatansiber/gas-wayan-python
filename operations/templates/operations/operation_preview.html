@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Konfirmasi {{ title }} - Gas Wayan{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Konfirmasi: {{ title }}</h1>
+  <p class="help-text">Periksa data berikut sebelum konfirmasi. Klik "Konfirmasi" hanya
+     sekali - sistem sudah aman terhadap klik ganda.</p>
+  <dl class="preview">
+    {% for label, value in preview_rows %}
+    <dt>{{ label }}</dt>
+    <dd>{{ value }}</dd>
+    {% endfor %}
+  </dl>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="step" value="confirm">
+    <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+    {% for name, value in hidden_fields.items %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}
+    <button type="submit">Konfirmasi</button>
+    <a href="javascript:history.back()" class="btn secondary">Batal, ubah data</a>
+  </form>
+</div>
+{% endblock %}

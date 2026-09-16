@@ -1,0 +1,43 @@
+{
+  "raw_rows_total": 11137,
+  "blank_rows_total": 540,
+  "staging_rows_total": 10597,
+  "staging_by_review_status": {
+    "ERROR": 41,
+    "NEEDS_REVIEW": 9450,
+    "READY": 1106
+  },
+  "staging_by_returned_status": {
+    "KEMBALI": 26,
+    "NONE": 2044,
+    "DATE": 8349,
+    "K": 28,
+    "SDH_KEMBALI": 6,
+    "OTHER_TEXT": 142,
+    "SDH_BALIK": 2
+  },
+  "gas_type_known": 1432,
+  "gas_type_unknown_nonempty": 665,
+  "gas_type_empty": 8500,
+  "sent_at_native": 798,
+  "sent_at_text_parsed": 9397,
+  "sent_at_unparseable": 186,
+  "duplicate_candidate_groups": 53,
+  "duplicate_candidate_extra_rows": 54,
+  "alias_candidate_groups": 234,
+  "alias_candidate_variant_rows": 567,
+  "last_source_rows": [
+    {
+      "source_row_number": 11138,
+      "is_blank": true
+    },
+    {
+      "source_row_number": 11137,
+      "is_blank": true
+    },
+    {
+      "source_row_number": 11136,
+      "is_blank": true
+    }
+  ]
+}

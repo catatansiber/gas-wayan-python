@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Hapus riwayat penggunaan - Gas Wayan{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Hapus riwayat penggunaan</h1>
+  <p>Hapus riwayat tabung <strong>{{ cycle.cylinder.serial_number }}</strong> untuk {{ cycle.customer.display_name }}?</p>
+  <p class="help-text">Event pengiriman dan pengembalian pada riwayat ini akan dihapus. Tindakan ini tidak dapat dibatalkan.</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="idempotency_key" value="{{ idempotency_key }}"><button type="submit">Hapus riwayat</button> <a class="btn secondary" href="{% url 'operations:usage-log' %}">Batal</a></form>
+</div>
+{% endblock %}

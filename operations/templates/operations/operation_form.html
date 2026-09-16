@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - Gas Wayan{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{{ title }}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<p class="help-text">{{ field.help_text }}</p>{% endif %}
+    {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+    {% endfor %}
+    {% if form.non_field_errors %}
+    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+    {% endif %}
+    <button type="submit">Lanjut - lihat preview</button>
+  </form>
+</div>
+{% endblock %}

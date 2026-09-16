@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block title %}Ubah role akun - Gas Wayan{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}<div class="card"><h1>Ubah role: {{ account.username }}</h1><form method="post">{% csrf_token %}{% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}{% endfor %}<button type="submit">Simpan</button></form></div>{% endblock %}

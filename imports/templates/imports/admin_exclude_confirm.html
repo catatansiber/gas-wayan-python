@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Kecualikan {{ staging_rows|length }} baris staging dari publish</h1>
+<p>Wajib isi alasan - keputusan ini tercatat sebagai <code>ReviewDecision</code> append-only
+(siapa, kapan, alasan) dan tidak bisa dipublish lagi tanpa keputusan baru.</p>
+
+<ul>
+    {% for row in staging_rows %}
+    <li>Baris sumber {{ row.raw_row.source_row_number }} - tabung {{ row.serial_number_raw }}</li>
+    {% endfor %}
+</ul>
+
+<form method="post">
+    {% csrf_token %}
+    {% for row in staging_rows %}
+    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ row.pk }}">
+    {% endfor %}
+    <input type="hidden" name="action" value="exclude_with_reason">
+    <p>
+        <label for="id_reason">Alasan (wajib):</label><br>
+        <textarea id="id_reason" name="reason" rows="4" cols="60" required></textarea>
+    </p>
+    <input type="submit" name="apply" value="Kecualikan dengan alasan ini">
+</form>
+{% endblock %}

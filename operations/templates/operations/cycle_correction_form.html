@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Ubah riwayat siklus - Gas Wayan{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Ubah riwayat siklus {{ cycle.cylinder.serial_number }}</h1>
+  <p class="help-text">Perubahan dicatat sebagai koreksi; event lama tidak dihapus.</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+    {% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="help-text">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}{% endfor %}
+    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+    <button type="submit">Simpan koreksi</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Jenis gas - Gas Wayan{% endblock %}
+{% block content %}
+<div class="card"><h1>Jenis gas</h1><a class="btn" href="{% url 'catalog:gas-type-create' %}">Tambah jenis gas</a></div>
+<div class="card table-wrap"><table><thead><tr><th>Kode</th><th>Status</th></tr></thead><tbody>
+{% for gas in gas_types %}<tr><td>{{ gas.code }}</td><td>{% if gas.is_active %}Aktif{% else %}Tidak aktif{% endif %}</td></tr>{% empty %}<tr><td colspan="2">Belum ada jenis gas.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

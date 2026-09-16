@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Log penggunaan tabung - Gas Wayan{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Log penggunaan tabung</h1>
+  <form method="get">
+    <label for="id_serial">Filter nomor tabung (exact, opsional)</label>
+    <input type="text" id="id_serial" name="serial_number" value="{{ serial_query }}">
+    <label for="id_customer">Filter pelanggan/relasi (mengandung, opsional)</label>
+    <input type="text" id="id_customer" name="customer" value="{{ customer_query }}">
+    <label for="id_status">Filter status</label>
+    <select id="id_status" name="status">
+      <option value="">Semua status</option>
+      <option value="DIKIRIM"{% if status_query == "DIKIRIM" %} selected{% endif %}>Dikirim</option>
+      <option value="KEMBALI"{% if status_query == "KEMBALI" %} selected{% endif %}>Kembali</option>
+    </select>
+    {% if include_archive %}<input type="hidden" name="include_archive" value="1">{% endif %}
+    <button type="submit">Filter</button>
+  </form>
+</div>
+
+<div class="card table-wrap">
+  {% if page_obj.paginator.count == 0 %}
+  <p>Tidak ada hasil untuk pencarian ini.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr><th>No.</th><th>Nomor tabung</th><th>Pelanggan/relasi</th><th>Tanggal pengiriman</th><th>Tanggal kembali</th><th>Jenis gas</th><th>Status</th><th>Lama di luar (hari)</th>{% if user.role == 'ADMIN' %}<th>Aksi</th>{% endif %}</tr>
+    </thead>
+    <tbody>
+      {% for cycle in page_obj %}
+      <tr>
+        <td>{{ page_obj.start_index|add:forloop.counter0 }}</td>
+        <td><a href="{% url 'operations:cylinder-detail' cycle.cylinder.serial_number %}">{{ cycle.cylinder.serial_number }}</a></td>
+        <td>{{ cycle.customer.display_name }}</td>
+        <td>{{ cycle.sent_at|date:"d/m/Y" }}</td>
+        <td>{% if cycle.returned_at %}{{ cycle.returned_at|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+        <td>{{ cycle.gas_type_at_dispatch.code|default:"-" }}</td>
+        <td>{% if cycle.status == "OPEN" %}Dikirim{% else %}Kembali{% endif %}</td>
+        <td>{{ cycle.days_out }}</td>
+        {% if user.role == 'ADMIN' %}<td><a href="{% url 'operations:delete-cycle-history' cycle.id %}">Hapus</a></td>{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include "operations/_pagination.html" %}
+  {% endif %}
+</div>
+<p class="help-text">Log siklus yang sudah kembali lebih dari satu tahun diarsipkan dari tampilan ini, tetapi tidak dihapus.</p>
+{% if include_archive %}<p><a href="{% url 'operations:usage-log' %}?serial_number={{ serial_query|urlencode }}&amp;customer={{ customer_query|urlencode }}&amp;status={{ status_query|urlencode }}">Sembunyikan arsip</a></p>{% else %}<p><a href="{% url 'operations:usage-log' %}?serial_number={{ serial_query|urlencode }}&amp;customer={{ customer_query|urlencode }}&amp;status={{ status_query|urlencode }}&amp;include_archive=1">Tampilkan arsip</a></p>{% endif %}
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load operation_labels %}
+{% block title %}Tabung {{ cylinder.serial_number }} - Gas Wayan{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Tabung {{ cylinder.serial_number }}</h1>
+  <p>
+    Status: <span class="status-badge status-{{ cylinder.status }}">{{ cylinder.status }}</span>
+  </p>
+  {% if active_cycle %}
+  <p>Siklus aktif: dikirim ke <strong>{{ active_cycle.customer.display_name }}</strong> pada
+     {{ active_cycle.sent_at|date:"d/m/Y" }}
+     {% if active_cycle.gas_type_at_dispatch %}({{ active_cycle.gas_type_at_dispatch.code }}){% endif %}.</p>
+  {% else %}
+  <p class="help-text">Tidak ada siklus aktif saat ini.</p>
+  {% endif %}
+</div>
+
+<div class="card table-wrap">
+  <h2>Riwayat siklus (kirim/kembali)</h2>
+  {% if cycles_page.paginator.count == 0 %}
+  <p class="help-text">Belum ada riwayat.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Pelanggan</th><th>Gas</th><th>Kirim</th><th>Kembali</th><th>Status</th>
+        <th>Alasan tutup</th>{% if user.role == 'ADMIN' %}<th></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for cycle in cycles_page %}
+      <tr>
+        <td>{{ cycle.customer.display_name }}</td>
+        <td>{{ cycle.gas_type_at_dispatch.code|default:"-" }}</td>
+        <td>{{ cycle.sent_at|date:"d/m/Y" }}</td>
+        <td>
+          {% if cycle.date_unknown %}
+          <span class="help-text">tanggal tidak diketahui</span>
+          {% elif cycle.returned_at %}
+          {{ cycle.returned_at|date:"d/m/Y" }}
+          {% else %}
+          <span class="help-text">belum kembali</span>
+          {% endif %}
+        </td>
+        <td>{{ cycle.status }}</td>
+        <td>{{ cycle.close_reason|default:"-" }}</td>
+        {% if user.role == 'ADMIN' %}<td><a href="{% url 'operations:correct-cycle' cycle.id %}">Ubah</a></td>{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% with page_obj=cycles_page page_param="cycles_page" %}
+  {% include "operations/_pagination.html" %}
+  {% endwith %}
+  {% endif %}
+</div>
+
+<div class="card table-wrap">
+  <h2>Log status</h2>
+  <table>
+    <thead>
+      <tr><th>Waktu (Asia/Makassar)</th><th>Status</th><th>Sumber</th><th>Alasan</th></tr>
+    </thead>
+    <tbody>
+      {% for event in events_page %}
+      <tr>
+        <td>{{ event.created_at|date:"d/m/Y H:i" }}</td>
+        <td>{{ event.event_type|event_label }}</td>
+        <td>{{ event.source }}</td>
+        <td>{{ event.reason|default:"-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% with page_obj=events_page page_param="events_page" %}
+  {% include "operations/_pagination.html" %}
+  {% endwith %}
+</div>
+
+<p><a href="{% url 'operations:search' %}">&laquo; Kembali ke pencarian</a></p>
+{% endblock %}

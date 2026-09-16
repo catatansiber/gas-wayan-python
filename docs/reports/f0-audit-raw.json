@@ -1,0 +1,153 @@
+﻿{
+    "source":  {
+                   "path":  "C:\\Users\\madea\\Documents\\Gas Wayan Python\\SERI TABUNG.xlsm",
+                   "sha256":  "D96FC4E7366BFC9B38CBD2BEB6985CAB361BCA9E1D36CFAED5DD1FFDDFA33B81",
+                   "checkedAt":  "2026-09-16T08:57:10+08:00"
+               },
+    "sheets":  {
+                   "databasePart":  "xl/worksheets/sheet8.xml",
+                   "searchDataPart":  "xl/worksheets/sheet10.xml",
+                   "searchDataHidden":  true,
+                   "searchDataRowElements":  7
+               },
+    "rows":  {
+                 "dimensionMaxRow":  11138,
+                 "rowElementsInXml":  10599,
+                 "dataRows":  10597,
+                 "blankRowsWithElement":  1,
+                 "physicalRowsAfterHeader":  11137,
+                 "blankRowsTotal":  540,
+                 "countA_nonBlank":  10597
+             },
+    "columnA_Nomor":  {
+                          "empty":  1,
+                          "nonEmpty":  10597,
+                          "uniqueValues":  7036,
+                          "duplicateGroups":  2466,
+                          "duplicateExtraRows":  3561
+                      },
+    "columnB_NomorTabung":  {
+                                "empty":  42,
+                                "nonEmptyAfterTrim":  10556,
+                                "uniqueAfterTrim":  2450,
+                                "serialsWithMultiple":  1827,
+                                "maxRecordsPerSerial":  14,
+                                "leadingTrailingSpace":  2470
+                            },
+    "columnC_NamaRelasi":  {
+                               "empty":  44,
+                               "nonEmpty":  10554,
+                               "uniqueAfterTrimOnly":  1621,
+                               "uniqueAfterTrimUpperCollapse":  1288,
+                               "leadingTrailingSpace":  3650
+                           },
+    "columnD_TanggalPengiriman":  {
+                                      "empty":  217,
+                                      "nativeExcelDate":  798,
+                                      "stringNonEmpty":  9583,
+                                      "parseableString":  9402,
+                                      "unparseableString":  181,
+                                      "leadingTrailingSpace":  3212
+                                  },
+    "columnE_TanggalPengembalian":  {
+                                        "empty":  2045,
+                                        "nativeExcelDate":  519,
+                                        "stringNonEmpty":  8034,
+                                        "parseableString":  7830,
+                                        "unparseableString":  204,
+                                        "leadingTrailingSpace":  3122,
+                                        "statusKeywordCounts":  {
+                                                                    "KEMBALI":  26,
+                                                                    "GANTI TABUNG":  5,
+                                                                    "HILANG":  1,
+                                                                    "TABUNG DIGANTI":  1,
+                                                                    "SDH KEMBALI":  6,
+                                                                    "SDH BALIK":  2,
+                                                                    "CEK":  1,
+                                                                    "TUKAR TABUNG":  1,
+                                                                    "K":  28
+                                                                }
+                                    },
+    "columnF_JenisGas":  {
+                             "empty":  8501,
+                             "nonEmpty":  2097,
+                             "uniqueAfterTrimOnly":  165,
+                             "uniqueAfterSimpleNormalize":  153,
+                             "leadingTrailingSpace":  793,
+                             "top15Normalized":  [
+                                                     {
+                                                         "Value":  "O2",
+                                                         "Count":  751
+                                                     },
+                                                     {
+                                                         "Value":  "AR",
+                                                         "Count":  270
+                                                     },
+                                                     {
+                                                         "Value":  "C2H2",
+                                                         "Count":  186
+                                                     },
+                                                     {
+                                                         "Value":  "N2",
+                                                         "Count":  127
+                                                     },
+                                                     {
+                                                         "Value":  "BBS",
+                                                         "Count":  108
+                                                     },
+                                                     {
+                                                         "Value":  "CO2",
+                                                         "Count":  98
+                                                     },
+                                                     {
+                                                         "Value":  "AR BBS",
+                                                         "Count":  37
+                                                     },
+                                                     {
+                                                         "Value":  "N2 TOB",
+                                                         "Count":  27
+                                                     },
+                                                     {
+                                                         "Value":  "MR",
+                                                         "Count":  26
+                                                     },
+                                                     {
+                                                         "Value":  "TOB",
+                                                         "Count":  26
+                                                     },
+                                                     {
+                                                         "Value":  "CO2 BBS",
+                                                         "Count":  26
+                                                     },
+                                                     {
+                                                         "Value":  "CO2 SA",
+                                                         "Count":  23
+                                                     },
+                                                     {
+                                                         "Value":  "AR ABG",
+                                                         "Count":  21
+                                                     },
+                                                     {
+                                                         "Value":  "TR",
+                                                         "Count":  19
+                                                     },
+                                                     {
+                                                         "Value":  "TIRA",
+                                                         "Count":  17
+                                                     }
+                                                 ]
+                         },
+    "businessDuplicates_IgnoringNomor":  {
+                                             "groups":  23,
+                                             "extraRows":  58
+                                         },
+    "chronology":  {
+                       "rowsWithBothDatesResolved":  8059,
+                       "returnBeforeSendCandidates":  418
+                   },
+    "flaggedRows_10599_10601":  {
+                                    "10600":  true,
+                                    "10601":  true,
+                                    "10599":  true
+                                }
+}
