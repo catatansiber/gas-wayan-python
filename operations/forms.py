@@ -58,6 +58,11 @@ class DispatchForm(forms.Form):
     )
     gas_type_code = forms.ChoiceField(label="Jenis gas", error_messages={"required": REQUIRED_MSG})
     sent_at = _date_field("Tanggal kirim")
+    # Diisi tersembunyi oleh operation_preview.html hanya ketika halaman preview sudah
+    # memberi tahu user bahwa nomor tabung ini belum terdaftar (lihat dispatch_view). Dipakai
+    # dispatch_cylinder() sebagai izin eksplisit untuk mendaftarkan tabung baru - tanpa flag
+    # ini, tabung yang tidak ditemukan tetap menghasilkan CylinderNotFound seperti biasa.
+    confirm_new_cylinder = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

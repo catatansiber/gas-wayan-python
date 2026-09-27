@@ -155,6 +155,10 @@ class OperationSpec:
     build_service_kwargs: Callable[[dict], dict]
     build_preview_rows: Callable[[dict], list]
     success_redirect: Callable[[dict], str]
+    # Opsional - dipakai HANYA oleh dispatch_view untuk notice "tabung belum terdaftar" di
+    # halaman preview. Operasi lain membiarkan ini None sehingga _operation_view berperilaku
+    # persis seperti sebelumnya.
+    build_preview_notice: Callable[[dict], str] | None = None
 
 
 def _serialize_for_repost(form) -> dict[str, str]:
@@ -195,6 +199,9 @@ def _operation_view(request, spec: OperationSpec):
     if request.method == "POST":
         form = spec.form_class(request.POST)
         if form.is_valid():
+            notice = ""
+            if spec.build_preview_notice:
+                notice = spec.build_preview_notice(form.cleaned_data)
             return render(
                 request,
                 "operations/operation_preview.html",
@@ -203,6 +210,7 @@ def _operation_view(request, spec: OperationSpec):
                     "preview_rows": spec.build_preview_rows(form.cleaned_data),
                     "hidden_fields": _serialize_for_repost(form),
                     "idempotency_key": str(uuid.uuid4()),
+                    "notice": notice,
                 },
             )
         return render(
@@ -217,6 +225,17 @@ def _gas_label(code):
     return code or "-"
 
 
+def _dispatch_preview_notice(d):
+    serial = d["serial_number"].strip()
+    if services.cylinder_exists(serial):
+        return ""
+    return (
+        f'Tabung "{serial}" belum terdaftar di database. Klik "Konfirmasi" untuk '
+        "mendaftarkannya sebagai tabung baru (status Available) sekaligus mengirimkannya "
+        "ke pelanggan ini."
+    )
+
+
 @role_required(*OPERATOR_AND_ADMIN)
 def dispatch_view(request):
     spec = OperationSpec(
@@ -228,6 +247,7 @@ def dispatch_view(request):
             "customer_id": d["customer"].id,
             "gas_type_code": d["gas_type_code"],
             "sent_at": d["sent_at"],
+            "allow_new_cylinder": d.get("confirm_new_cylinder", False),
         },
         build_preview_rows=lambda d: [
             ("Nomor tabung", d["serial_number"].strip()),
@@ -238,6 +258,7 @@ def dispatch_view(request):
         success_redirect=lambda d: reverse(
             "operations:cylinder-detail", args=[d["serial_number"].strip()]
         ),
+        build_preview_notice=_dispatch_preview_notice,
     )
     return _operation_view(request, spec)
 

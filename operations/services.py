@@ -118,6 +118,48 @@ def _lock_cylinder(serial_number):
         raise CylinderNotFound(f"Tabung {serial_number} tidak ditemukan.") from None
 
 
+def cylinder_exists(serial_number):
+    """Read-only, dipakai dispatch_view untuk menampilkan notice "tabung baru" di halaman
+    preview SEBELUM user mengonfirmasi - tidak mengunci baris apa pun."""
+    return Cylinder.objects.filter(serial_number=serial_number).exists()
+
+
+def _lock_or_register_cylinder(serial_number, *, allow_create, actor, source):
+    """Sama seperti _lock_cylinder, tapi kalau allow_create=True dan tabung belum ada,
+    daftarkan sebagai Cylinder baru (status AVAILABLE) alih-alih menolak dengan
+    CylinderNotFound. Dipakai KHUSUS dispatch_cylinder (kirim tabung baru ke pelanggan
+    pertama kali) - operasi lain (kembali/tukar/hilang/maintenance/pensiun) tetap wajib
+    tabung yang sudah terdaftar, jadi tetap memanggil _lock_cylinder biasa.
+
+    allow_create hanya berlaku sebagai "izin", BUKAN otomatis membuat: user harus sudah
+    melihat notice di halaman preview dan menekan Konfirmasi (lihat DispatchForm.confirm_new_
+    cylinder) sebelum baris ini tereksekusi, supaya typo nomor tabung tidak diam-diam menjadi
+    master data baru."""
+    try:
+        return _lock_cylinder(serial_number), False
+    except CylinderNotFound:
+        if not allow_create:
+            raise
+        cylinder, created = Cylinder.objects.get_or_create(
+            serial_number=serial_number, defaults={"status": Cylinder.Status.AVAILABLE}
+        )
+        if created:
+            _write_audit(
+                actor,
+                source,
+                "cylinder.auto_register",
+                "Cylinder",
+                cylinder.id,
+                None,
+                {"serial_number": serial_number, "status": cylinder.status},
+                reason="Didaftarkan otomatis saat kirim - nomor belum ada di database.",
+            )
+            return cylinder, True
+        # Race: tabung dibuat oleh request lain di antara _lock_cylinder gagal dan
+        # get_or_create di sini - ambil lock yang benar sekarang, jalur normal.
+        return _lock_cylinder(serial_number), False
+
+
 def _lock_open_cycle(cylinder):
     cycle = (
         Cycle.objects.select_for_update()
@@ -126,7 +168,8 @@ def _lock_open_cycle(cylinder):
     )
     if cycle is None:
         raise NoActiveCycle(
-            f"Tabung {cylinder.serial_number} tidak memiliki siklus aktif (belum dikirim atau sudah kembali)."
+            f"Tabung {cylinder.serial_number} tidak memiliki siklus aktif "
+            "(belum dikirim atau sudah kembali)."
         )
     return cycle
 
@@ -137,7 +180,15 @@ def _lock_open_cycle(cylinder):
 
 
 def dispatch_cylinder(
-    *, actor, serial_number, customer_id, gas_type_code, sent_at, idempotency_key, source="WEB"
+    *,
+    actor,
+    serial_number,
+    customer_id,
+    gas_type_code,
+    sent_at,
+    idempotency_key,
+    source="WEB",
+    allow_new_cylinder=False,
 ):
     _require_role(actor, OPERATOR_AND_ADMIN)
     payload = {
@@ -154,7 +205,9 @@ def dispatch_cylinder(
         if not created:
             return record.result_cycle
 
-        cylinder = _lock_cylinder(serial_number)
+        cylinder, _newly_registered = _lock_or_register_cylinder(
+            serial_number, allow_create=allow_new_cylinder, actor=actor, source=source
+        )
         if cylinder.status != Cylinder.Status.AVAILABLE:
             raise CylinderNotAvailable(
                 f"Tabung {serial_number} berstatus {cylinder.status}, tidak dapat dikirim."

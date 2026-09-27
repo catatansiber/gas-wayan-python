@@ -102,6 +102,72 @@ class DispatchTests(ServiceTestCaseMixin, TestCase):
                 idempotency_key="k1",
             )
 
+    def test_dispatch_unknown_cylinder_still_raises_when_allow_new_cylinder_false(self):
+        """allow_new_cylinder default-nya False - hanya True eksplisit yang mengizinkan
+        auto-registrasi, supaya perilaku lama (menolak) tetap jadi default aman."""
+        with self.assertRaises(CylinderNotFound):
+            services.dispatch_cylinder(
+                actor=self.operator,
+                serial_number="TIDAK-ADA",
+                customer_id=self.customer1.id,
+                gas_type_code=GasType.Code.O2,
+                sent_at=date(2026, 1, 10),
+                idempotency_key="k1",
+                allow_new_cylinder=False,
+            )
+
+    def test_dispatch_registers_new_cylinder_when_allowed(self):
+        self.assertFalse(Cylinder.objects.filter(serial_number="BARU-001").exists())
+
+        cycle = services.dispatch_cylinder(
+            actor=self.operator,
+            serial_number="BARU-001",
+            customer_id=self.customer1.id,
+            gas_type_code=GasType.Code.O2,
+            sent_at=date(2026, 1, 10),
+            idempotency_key="k-new-1",
+            allow_new_cylinder=True,
+        )
+
+        cylinder = Cylinder.objects.get(serial_number="BARU-001")
+        self.assertEqual(cylinder.status, Cylinder.Status.OUT)
+        self.assertEqual(cycle.cylinder_id, cylinder.id)
+        self.assertEqual(cycle.customer_id, self.customer1.id)
+        self.assertEqual(cycle.status, Cycle.Status.OPEN)
+
+        from audit.models import AuditLog
+
+        register_log = AuditLog.objects.filter(
+            action="cylinder.auto_register", entity_id=str(cylinder.id)
+        ).first()
+        self.assertIsNotNone(register_log)
+        self.assertEqual(register_log.actor_id, self.operator.id)
+
+        dispatch_log = AuditLog.objects.filter(
+            action="cylinder.dispatch", entity_id=str(cycle.id)
+        ).first()
+        self.assertIsNotNone(dispatch_log)
+
+    def test_dispatch_does_not_duplicate_register_when_cylinder_already_exists(self):
+        """allow_new_cylinder=True pada tabung yang SUDAH ada tidak boleh membuat audit
+        cylinder.auto_register - hanya tabung yang benar-benar baru yang dicatat begitu."""
+        from audit.models import AuditLog
+
+        services.dispatch_cylinder(
+            actor=self.operator,
+            serial_number=self.cylinder1.serial_number,
+            customer_id=self.customer1.id,
+            gas_type_code=GasType.Code.O2,
+            sent_at=date(2026, 1, 10),
+            idempotency_key="k-existing-1",
+            allow_new_cylinder=True,
+        )
+        self.assertFalse(
+            AuditLog.objects.filter(
+                action="cylinder.auto_register", entity_id=str(self.cylinder1.id)
+            ).exists()
+        )
+
 
 class RetryIdempotencyTests(ServiceTestCaseMixin, TestCase):
     """Bukti acceptance: 'ulang key yang sama' -> hasil awal dikembalikan, bukan transaksi baru."""

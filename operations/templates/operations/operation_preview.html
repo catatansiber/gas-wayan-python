@@ -6,6 +6,9 @@
   <h1>Konfirmasi: {{ title }}</h1>
   <p class="help-text">Periksa data berikut sebelum konfirmasi. Klik "Konfirmasi" hanya
      sekali - sistem sudah aman terhadap klik ganda.</p>
+  {% if notice %}
+  <p class="notice">{{ notice }}</p>
+  {% endif %}
   <dl class="preview">
     {% for label, value in preview_rows %}
     <dt>{{ label }}</dt>
@@ -19,6 +22,13 @@
     {% for name, value in hidden_fields.items %}
     <input type="hidden" name="{{ name }}" value="{{ value }}">
     {% endfor %}
+    {% if notice %}
+    {# Override eksplisit - user sudah melihat notice tabung baru di atas dan menekan
+       Konfirmasi, jadi izinkan dispatch_cylinder mendaftarkan tabung ini. QueryDict.get()
+       memakai nilai TERAKHIR untuk key duplikat, jadi field ini sengaja ditaruh setelah
+       loop hidden_fields agar menang atas confirm_new_cylinder="False" bawaan form. #}
+    <input type="hidden" name="confirm_new_cylinder" value="True">
+    {% endif %}
     <button type="submit">Konfirmasi</button>
     <a href="javascript:history.back()" class="btn secondary">Batal, ubah data</a>
   </form>

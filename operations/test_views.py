@@ -268,6 +268,50 @@ class InvalidInputTests(WebTestCaseMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "tidak dapat dikirim")
 
+    def test_dispatch_new_serial_shows_notice_and_registers_on_confirm(self):
+        """Nomor tabung yang belum ada di database: preview menampilkan notice (bukan
+        menolak), dan Konfirmasi mendaftarkan tabung baru sekaligus mengirimkannya."""
+        self.client.force_login(self.operator)
+        self.assertFalse(Cylinder.objects.filter(serial_number="WEB-BARU-01").exists())
+
+        preview = self.client.post(
+            reverse("operations:dispatch"),
+            {
+                "serial_number": "WEB-BARU-01",
+                "customer": self.customer.id,
+                "gas_type_code": "O2",
+                "sent_at": "2025-01-01",
+            },
+        )
+        self.assertEqual(preview.status_code, 200)
+        self.assertContains(preview, "belum terdaftar")
+        # Tabung belum benar-benar dibuat hanya karena preview dilihat.
+        self.assertFalse(Cylinder.objects.filter(serial_number="WEB-BARU-01").exists())
+
+        confirm_payload = {
+            **dict(preview.context["hidden_fields"]),
+            "step": "confirm",
+            "idempotency_key": preview.context["idempotency_key"],
+            "confirm_new_cylinder": "True",
+        }
+        response = self.client.post(reverse("operations:dispatch"), confirm_payload)
+        self.assertRedirects(response, reverse("operations:cylinder-detail", args=["WEB-BARU-01"]))
+        cylinder = Cylinder.objects.get(serial_number="WEB-BARU-01")
+        self.assertEqual(cylinder.status, Cylinder.Status.OUT)
+
+    def test_dispatch_existing_serial_shows_no_notice(self):
+        self.client.force_login(self.operator)
+        preview = self.client.post(
+            reverse("operations:dispatch"),
+            {
+                "serial_number": "WEB-0001",
+                "customer": self.customer.id,
+                "gas_type_code": "O2",
+                "sent_at": "2025-01-01",
+            },
+        )
+        self.assertNotContains(preview, "belum terdaftar")
+
 
 class SearchAndPaginationTests(WebTestCaseMixin, TestCase):
     @classmethod
