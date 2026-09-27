@@ -125,7 +125,9 @@ def _lock_open_cycle(cylinder):
         .first()
     )
     if cycle is None:
-        raise NoActiveCycle(cylinder.serial_number)
+        raise NoActiveCycle(
+            f"Tabung {cylinder.serial_number} tidak memiliki siklus aktif (belum dikirim atau sudah kembali)."
+        )
     return cycle
 
 
