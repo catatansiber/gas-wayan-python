@@ -1,7 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Kelola role akun - Gas Wayan{% endblock %}
+{% block back %}{% url 'identity:dashboard' as dash %}{% include "_back.html" with href=dash %}{% endblock %}
+{% block page_title %}Role akun{% endblock %}
 {% block content %}
-<div class="card table-wrap"><h1>Kelola role akun</h1><table><thead><tr><th>Username</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>
-{% for account in accounts %}<tr><td>{{ account.username }}{% if account.is_superuser %} <span class="help-text">(superadmin)</span>{% endif %}</td><td>{{ account.get_role_display }}</td><td>{% if account.is_active %}Aktif{% else %}Tidak aktif{% endif %}</td><td><a href="{% url 'identity:user-role-edit' account.id %}">Ubah</a></td></tr>{% endfor %}
-</tbody></table></div>
+<div class="gw-page">
+  <div class="gw-list">
+    {% for account in accounts %}
+    <div class="gw-row">
+      <div class="gw-row-main">
+        <div class="gw-strong">{{ account.username }}{% if account.is_superuser %} <span class="text-muted" style="font-weight:400;font-size:12px">(superadmin)</span>{% endif %}</div>
+        <div class="gw-badges" style="margin-top:4px">
+          <span class="tag tag-outline">{{ account.get_role_display }}</span>
+          <span class="badge {% if account.is_active %}badge-active{% else %}badge-inactive{% endif %}">{% if account.is_active %}Aktif{% else %}Nonaktif{% endif %}</span>
+        </div>
+      </div>
+      <a class="btn btn-icon btn-secondary" href="{% url 'identity:user-role-edit' account.id %}" aria-label="Ubah role {{ account.username }}" title="Ubah"><svg class="i"><use href="#i-pencil"></use></svg></a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
 {% endblock %}

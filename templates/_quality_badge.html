@@ -1,0 +1,2 @@
+{# Badge kualitas data (garis putus-putus) - BUKAN status tabung. Parameter: flag. #}
+<span class="badge{% if lg %} lg{% endif %} badge-quality" title="Kualitas data: {{ flag }}"><svg class="i"><use href="#i-alert-triangle"></use></svg>{% if flag == "NEEDS_REVIEW" %}Perlu Ditinjau{% else %}{{ flag }}{% endif %}</span>

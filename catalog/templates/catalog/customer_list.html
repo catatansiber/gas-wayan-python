@@ -1,8 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Pelanggan/relasi - Gas Wayan{% endblock %}
+{% block back %}{% url 'identity:dashboard' as dash %}{% include "_back.html" with href=dash %}{% endblock %}
+{% block page_title %}Pelanggan/relasi{% endblock %}
 {% block content %}
-<div class="card"><h1>Pelanggan/relasi</h1><a class="btn" href="{% url 'catalog:customer-create' %}">Tambah pelanggan/relasi</a></div>
-<div class="card table-wrap"><table><thead><tr><th>Nama</th><th>Telepon</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-{% for customer in customers %}<tr><td>{{ customer.display_name }}</td><td>{{ customer.phone_number|default:"-" }}</td><td>{% if customer.is_active %}Aktif{% else %}Tidak aktif{% endif %}</td><td><a href="{% url 'catalog:customer-edit' customer.id %}">Ubah</a> · <a href="{% url 'catalog:customer-delete' customer.id %}">Hapus</a></td></tr>{% empty %}<tr><td colspan="4">Belum ada pelanggan/relasi.</td></tr>{% endfor %}
-</tbody></table></div>
+<div class="gw-page">
+  <a class="btn btn-primary btn-block" style="height:46px" href="{% url 'catalog:customer-create' %}"><svg class="i" style="width:16px;height:16px"><use href="#i-plus"></use></svg>Tambah pelanggan/relasi</a>
+  {% if customers %}
+  <div class="gw-list">
+    {% for customer in customers %}
+    <div class="gw-row">
+      <div class="gw-row-main">
+        <div class="gw-strong">{{ customer.display_name }}</div>
+        <div class="gw-meta">{{ customer.phone_number|default:"-" }}</div>
+      </div>
+      <span class="badge {% if customer.is_active %}badge-active{% else %}badge-inactive{% endif %}">{% if customer.is_active %}Aktif{% else %}Nonaktif{% endif %}</span>
+      <a class="btn btn-icon btn-secondary" href="{% url 'catalog:customer-edit' customer.id %}" aria-label="Ubah {{ customer.display_name }}" title="Ubah"><svg class="i"><use href="#i-pencil"></use></svg></a>
+      <a class="btn btn-icon btn-secondary" href="{% url 'catalog:customer-delete' customer.id %}" aria-label="Hapus {{ customer.display_name }}" title="Hapus"><svg class="i"><use href="#i-trash"></use></svg></a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="gw-empty"><svg class="i"><use href="#i-users"></use></svg><p>Belum ada pelanggan/relasi.</p></div>
+  {% endif %}
+</div>
 {% endblock %}

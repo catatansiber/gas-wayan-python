@@ -1,0 +1,2 @@
+{# Tombol kembali di top bar. Parameter: href (wajib), history (opsional: pakai history.back() bila ada, href sebagai fallback). #}
+<a class="btn btn-icon btn-secondary btn-back" href="{{ href }}" aria-label="Kembali"{% if history %} onclick="if(history.length>1){history.back();return false}"{% endif %}><svg class="i" style="width:18px;height:18px"><use href="#i-arrow-left"></use></svg></a>

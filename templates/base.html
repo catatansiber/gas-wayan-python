@@ -3,122 +3,349 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f2f2">
   <title>{% block title %}Gas Wayan{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap">
   <style>
+    /* Design system "Modernist" (handoff Claude Design): datar, sudut 0, garis 2px, satu aksen
+       merah. Token di :root adalah sumber kebenaran - jangan hard-code warna di template. */
     :root {
-      --border: #ddd;
-      --error: #b00020;
-      --success: #1a7a2e;
-      --muted: #666;
+      --color-bg: #f3f2f2;
+      --color-surface: #eae9e9;
+      --color-text: #201e1d;
+      --color-accent: #ec3013;
+      --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+      --color-muted: color-mix(in srgb, var(--color-text) 55%, transparent);
+
+      --color-neutral-100: #f8f4f4;
+      --color-neutral-200: #eae7e7;
+      --color-neutral-300: #d7d3d3;
+      --color-neutral-500: #9b9797;
+      --color-neutral-600: #7d7979;
+      --color-neutral-700: #605d5d;
+      --color-neutral-800: #444141;
+      --color-neutral-900: #2d2b2b;
+
+      --color-accent-100: #fff2ef;
+      --color-accent-500: #ff563c;
+      --color-accent-600: #dd2b0f;
+      --color-accent-700: #ae1800;
+      --color-accent-800: #7c1405;
+
+      --font-heading: "Archivo", system-ui, sans-serif;
+      --font-body: "Archivo", system-ui, sans-serif;
+
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+
+      --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+      --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
     }
-    * { box-sizing: border-box; }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; }
     body {
-      font-family: system-ui, sans-serif;
-      margin: 0;
-      padding: 0 1rem 2rem;
-      color: #1a1a1a;
-      background: #fafafa;
+      background: var(--color-neutral-300); color: var(--color-text);
+      font-family: var(--font-body); font-size: 15px; line-height: 1.55;
     }
-    .container { max-width: 960px; margin: 0 auto; }
-    .container.narrow { max-width: 480px; }
-    nav.topnav {
-      display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
-      padding: 0.75rem 0; margin-bottom: 1rem; border-bottom: 1px solid var(--border);
+    h1, h2, h3, h4 {
+      font-family: var(--font-heading); font-weight: 800;
+      line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 var(--space-2);
     }
-    nav.topnav a { color: #1a1a1a; text-decoration: none; font-size: 0.9rem; }
-    nav.topnav a:hover { text-decoration: underline; }
-    nav.topnav .spacer { flex: 1; }
-    details.account-menu { position: relative; }
-    details.account-menu summary { cursor: pointer; list-style: none; }
-    details.account-menu summary::-webkit-details-marker { display: none; }
-    .account-menu-content { position: absolute; right: 0; z-index: 1; min-width: 140px; padding: 0.5rem; background: #fff; border: 1px solid var(--border); border-radius: 6px; }
-    .card { border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; background: #fff; margin-bottom: 1rem; }
-    label { display: block; margin-top: 0.75rem; font-weight: 600; }
-    input[type="text"], input[type="password"], input[type="date"], select, textarea {
-      width: 100%; padding: 0.5rem; margin-top: 0.25rem; font-size: 1rem;
+    h1 { font-size: 42px; }
+    h2 { font-size: 32px; }
+    h3 { font-size: 25px; }
+    h4 { font-size: 20px; }
+    p { margin: 0 0 var(--space-3); }
+    a { color: var(--color-accent); text-underline-offset: 3px; }
+    a:hover { color: var(--color-accent-600); }
+    input, select, textarea, button { font-family: var(--font-body); }
+    :focus { outline: none; }
+    :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+    ::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+    .text-muted { color: var(--color-muted); }
+    .i { width: 18px; height: 18px; flex: none; display: block; }
+    .hr { height: 2px; border: 0; margin: var(--space-4) 0; background: var(--color-divider); }
+
+    /* — kerangka aplikasi: satu kolom 480px, tetap rapi di desktop — */
+    .gw-shell { min-height: 100vh; display: flex; justify-content: center; }
+    .gw-col {
+      width: 100%; max-width: 480px; min-height: 100vh; background: var(--color-bg);
+      display: flex; flex-direction: column; box-shadow: var(--shadow-lg); position: relative;
     }
-    button, .btn {
-      margin-top: 1rem; padding: 0.6rem 1.2rem; cursor: pointer; border-radius: 6px;
-      border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 1rem;
-      display: inline-block; text-decoration: none;
+    .gw-main { flex: 1; padding-bottom: 76px; display: flex; flex-direction: column; }
+    .gw-main.no-nav { padding-bottom: 0; }
+    .gw-page { padding: 16px 14px; display: flex; flex-direction: column; gap: 14px; }
+    .gw-page.roomy { padding: 18px 14px; gap: 16px; }
+
+    /* — top bar — */
+    .nav {
+      display: flex; align-items: center; gap: var(--space-4);
+      padding: var(--space-3) var(--space-4); border-bottom: 2px solid var(--color-divider);
+      background: var(--color-bg); position: sticky; top: 0; z-index: 5;
     }
-    .btn.secondary { background: #fff; color: #1a1a1a; }
-    .error { color: var(--error); }
-    .help-text { color: var(--muted); font-size: 0.85rem; }
-    .notice {
-      background: #fff4e0; color: #8a5a00; border: 1px solid #f0d9a8;
-      border-radius: 6px; padding: 0.6rem 0.9rem; font-size: 0.9rem;
+    .nav-brand { font-family: var(--font-heading); font-weight: 800; font-size: 16px; margin-right: auto; }
+    .nav .btn-back { border: none; margin-right: -8px; }
+    .gw-account { position: relative; }
+    .gw-account > summary { list-style: none; cursor: pointer; }
+    .gw-account > summary::-webkit-details-marker { display: none; }
+    .gw-avatar {
+      width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      background: var(--color-neutral-800); color: var(--color-bg);
+      font-family: var(--font-heading); font-weight: 800; font-size: 14px; text-transform: uppercase;
     }
-    .messages { list-style: none; padding: 0; margin: 0 0 1rem; }
-    .messages li { padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 0.5rem; }
-    .messages li.success { background: #e6f4ea; color: var(--success); }
-    .messages li.error { background: #fbe7e9; color: var(--error); }
-    .role-badge, .status-badge, .quality-badge {
-      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 4px; font-size: 0.8rem;
+    .gw-account-panel { position: absolute; top: 46px; right: 0; width: 240px; z-index: 20; }
+
+    /* — bottom nav — */
+    .gw-bottomnav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px;
+      display: flex; background: var(--color-bg); border-top: 2px solid var(--color-divider); z-index: 15;
     }
-    .role-badge { background: #eee; }
-    .status-AVAILABLE { background: #e6f4ea; color: var(--success); }
-    .status-OUT { background: #fff4e0; color: #8a5a00; }
-    .status-LOST { background: #fbe7e9; color: var(--error); }
-    .status-MAINTENANCE { background: #e7eefb; color: #1a4d8a; }
-    .status-RETIRED { background: #eee; color: var(--muted); }
-    .quality-badge { background: #fff4e0; color: #8a5a00; }
-    .table-wrap { overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; min-width: 480px; }
-    th, td { border-bottom: 1px solid var(--border); padding: 0.5rem; text-align: left; font-size: 0.9rem; }
-    th { background: #f2f2f2; }
-    .pagination { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
-    .pagination a, .pagination span { padding: 0.3rem 0.6rem; border: 1px solid var(--border); border-radius: 4px; text-decoration: none; color: #1a1a1a; }
-    .pagination .current { background: #1a1a1a; color: #fff; }
-    dl.preview { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; }
-    dl.preview dt { font-weight: 600; }
-    dl.preview dd { margin: 0; }
-    @media (max-width: 480px) {
-      body { padding: 0 0.5rem 1.5rem; }
-      dl.preview { grid-template-columns: 1fr; }
+    .gw-navbtn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; padding: 8px 0 6px;
+      background: none; border: none; cursor: pointer; color: var(--color-neutral-600);
+      font-family: var(--font-body); font-size: 11px; text-decoration: none;
+    }
+    .gw-navbtn:hover { color: var(--color-text); }
+    .gw-navbtn[aria-current="page"] { color: var(--color-accent); }
+    .gw-navbtn .i { width: 20px; height: 20px; }
+
+    /* — tombol — */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      cursor: pointer; text-decoration: none;
+      font-family: var(--font-heading); font-weight: 800; font-size: 14px; line-height: 1.2;
+      color: var(--color-text); background: transparent; border: 1px solid transparent;
+      padding: var(--space-2) 14px; border-radius: 0;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: var(--color-accent); color: var(--color-bg); }
+    .btn-primary:hover { background: var(--color-accent-600); color: var(--color-bg); }
+    .btn-primary:active { background: var(--color-accent-700); }
+    .btn-secondary { border-color: var(--color-divider); }
+    .btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
+    .btn-secondary:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+    .btn .i { width: 17px; height: 17px; }
+    .btn-icon { width: 36px; height: 36px; padding: 0; flex: none; }
+    .btn-icon .i { width: 15px; height: 15px; }
+    .btn-icon.sm { width: 28px; height: 28px; }
+    .btn-icon.sm .i { width: 13px; height: 13px; }
+    .btn-block { width: 100%; justify-content: center; }
+    .btn-lg { height: 48px; font-size: 15px; }
+
+    /* — form — */
+    .gw-form { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+    .field > label, .field-label {
+      display: block; font-size: 12px; margin-bottom: 5px;
+      color: color-mix(in srgb, var(--color-text) 70%, transparent);
+    }
+    /* Widget bawaan Django ({{ field }}) di dalam .field otomatis bergaya .input. */
+    .input, .field :is(input:not([type=checkbox]):not([type=radio]), select, textarea) {
+      width: 100%; min-height: 36px; padding: 6px 10px; font: inherit; font-size: 14px;
+      color: var(--color-text); caret-color: var(--color-accent);
+      background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 0;
+    }
+    .input:hover, .field :is(input, select, textarea):hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+    .input:focus-visible, .field :is(input, select, textarea):focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+    .input:disabled, .field :is(input, select, textarea):disabled { opacity: 0.6; }
+    textarea.input, .field textarea { min-height: 90px; resize: vertical; }
+    .field-help { font-size: 11px; margin: 4px 0 0; color: var(--color-muted); }
+    .field-error { font-size: 13px; margin: 4px 0 0; color: var(--color-accent-800); }
+    .field > label.check { display: inline-flex; margin: 0; font-size: 14px; color: var(--color-text); }
+    .check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+    .check.sm { font-size: 12px; }
+    .check input, .seg-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+    .check .box { width: 16px; height: 16px; flex: none; border-radius: 3px; border: 1.5px solid var(--color-divider); }
+    .check:hover .box { border-color: var(--color-accent); }
+    .check input:checked + .box {
+      border-color: var(--color-accent); background: var(--color-accent); box-shadow: inset 0 0 0 4px var(--color-bg);
+    }
+    .check input:focus-visible + .box { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+    .seg { display: flex; width: 100%; flex-wrap: wrap; overflow: hidden; border: 1px solid var(--color-divider); }
+    .seg-opt {
+      position: relative; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 12px; font-size: 13px; cursor: pointer; text-decoration: none; color: var(--color-text);
+    }
+    .seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
+    .seg-opt:has(input:checked), .seg-opt[aria-current="page"] { background: var(--color-accent); color: var(--color-bg); }
+    .seg-opt:not(:has(input:checked)):not([aria-current="page"]):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
+    .seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+
+    /* — card, alert, toast, dialog — */
+    .card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--color-surface); }
+    .card.muted { background: var(--color-neutral-100); }
+    .card-kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent); }
+    .elev-sm { box-shadow: var(--shadow-sm); }
+    .alert {
+      display: flex; gap: 8px; align-items: flex-start; padding: var(--space-3); font-size: 13px;
+      border: 2px solid var(--color-accent-500); background: var(--color-accent-100); color: var(--color-accent-800);
+    }
+    .alert .i { width: 16px; height: 16px; margin-top: 1px; }
+    .alert.strong { font-weight: 800; }
+    .messages-stack { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 0; }
+    .toast { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--color-neutral-900); color: var(--color-bg); }
+    .toast .i { width: 16px; height: 16px; }
+    .toast-text { flex: 1; font-size: 13px; }
+    .toast .btn-icon { width: 24px; height: 24px; color: var(--color-bg); }
+    .toast .btn-icon .i { width: 14px; height: 14px; }
+    .dialog {
+      width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--space-3);
+      padding: var(--space-4); background: var(--color-surface); box-shadow: var(--shadow-lg);
+    }
+    .dialog-title { font-family: var(--font-heading); font-weight: 800; font-size: 20px; }
+    .dialog-body { font-size: 14px; opacity: 0.85; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+    .dialog-page { flex: 1; display: grid; place-items: center; padding: 24px 16px; }
+
+    /* — tag & badge — */
+    .tag { display: inline-flex; align-items: center; font-size: 11px; letter-spacing: 0.02em; padding: 3px 10px; }
+    .tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-800); }
+    .tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
+      font-size: 11px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase;
+    }
+    .badge .i { width: 12px; height: 12px; }
+    .badge.lg .i { width: 13px; height: 13px; }
+    /* Status tabung = blok solid; kualitas data = garis putus-putus. Sengaja beda bentuk, bukan
+       hanya beda warna, supaya "Perlu Ditinjau" tidak pernah terbaca sebagai status tabung. */
+    .status-AVAILABLE { background: var(--color-neutral-900); color: var(--color-bg); }
+    .status-OUT { background: var(--color-accent-500); color: #fff; }
+    .status-LOST { background: var(--color-accent-800); color: #fff; }
+    .status-MAINTENANCE { background: var(--color-neutral-500); color: #fff; }
+    .status-RETIRED { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+    .badge-active { background: var(--color-neutral-900); color: var(--color-bg); }
+    .badge-inactive { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+    .badge-quality { background: var(--color-accent-100); color: var(--color-accent-800); border: 2px dashed var(--color-accent-500); }
+    .overline { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-muted); }
+    .overline.xs { font-size: 10px; margin-bottom: 4px; }
+
+    /* — tile, daftar bergaris, hasil pencarian — */
+    .gw-grid { display: grid; gap: 2px; background: var(--color-divider); }
+    .gw-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .gw-tile {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px 14px;
+      background: var(--color-surface); border: none; text-align: left; cursor: pointer;
+      font-family: var(--font-heading); font-weight: 800; font-size: 15px; color: var(--color-text); text-decoration: none;
+    }
+    .gw-tile:hover { background: color-mix(in srgb, var(--color-text) 5%, var(--color-surface)); color: var(--color-text); }
+    .gw-tile:active { background: var(--color-neutral-200); }
+    .gw-tile .i { width: 22px; height: 22px; color: var(--color-accent); }
+    .gw-tile.small { font-size: 13px; }
+    .gw-tile.small .i { width: 20px; height: 20px; color: inherit; }
+    .gw-tile.row { flex-direction: row; align-items: center; }
+    .gw-tile.row .i { width: 20px; height: 20px; color: var(--color-accent); }
+    .gw-tile.locked { opacity: .5; }
+    .gw-list { display: flex; flex-direction: column; gap: 2px; background: var(--color-divider); }
+    .gw-row { background: var(--color-surface); padding: 12px; display: flex; align-items: center; gap: 10px; }
+    .gw-row.stack { flex-direction: column; align-items: stretch; gap: 4px; }
+    .gw-row-main { flex: 1; min-width: 0; }
+    .gw-row-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .gw-row-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+    .gw-strong { font-family: var(--font-heading); font-weight: 800; }
+    .gw-strong a { color: inherit; text-decoration: none; }
+    .gw-strong a:hover { color: var(--color-accent); }
+    .gw-meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+    .gw-result {
+      display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--color-surface);
+      text-decoration: none; color: var(--color-text);
+    }
+    .gw-result:hover { background: color-mix(in srgb, var(--color-text) 5%, var(--color-surface)); color: var(--color-text); }
+    .gw-result > .i { color: var(--color-neutral-500); }
+    .gw-serial { font-family: var(--font-heading); font-weight: 800; font-size: 18px; letter-spacing: .01em; overflow-wrap: anywhere; }
+    .gw-serial.xl { font-size: 28px; }
+    .gw-serial.md { font-size: 20px; }
+    .gw-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .gw-empty { text-align: center; padding: 40px 16px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+    .gw-empty .i { width: 34px; height: 34px; margin: 0 auto; }
+    .gw-empty p { margin: 10px 0 0; font-size: 13px; }
+    .gw-footnote { font-size: 11px; margin: 0; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+    dl.gw-preview { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 6px 0 0; font-size: 14px; }
+    dl.gw-preview dt { font-weight: 600; }
+    dl.gw-preview dd { margin: 0; overflow-wrap: anywhere; }
+    .gw-timeline { display: flex; flex-direction: column; gap: 8px; }
+    .gw-event { display: flex; gap: 10px; font-size: 12px; }
+    .gw-event-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent); margin-top: 5px; flex: none; }
+    .pagination { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 13px; }
+    .pagination a, .pagination span { padding: 5px 10px; border: 1px solid var(--color-divider); text-decoration: none; color: var(--color-text); }
+    .pagination .current { background: var(--color-text); color: var(--color-bg); border-color: var(--color-text); }
+    .gw-denied-icon {
+      width: 56px; height: 56px; border-radius: 50%; background: var(--color-accent-100);
+      display: flex; align-items: center; justify-content: center; color: var(--color-accent-700);
+    }
+    .gw-denied-icon .i { width: 28px; height: 28px; }
+    /* Menu Maintenance di dashboard: panel muncul lewat #maintenance (tanpa JS, tanpa route baru). */
+    .gw-panel { display: none; }
+    .gw-panel:target { display: flex; scroll-margin-top: 72px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    @media (max-width: 359px) {
+      .gw-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+      dl.gw-preview { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="container{% block container_class %}{% endblock %}">
-    {% if user.is_authenticated %}
-    <nav class="topnav">
-      <a href="{% url 'identity:dashboard' %}">Dashboard</a>
-      <a href="{% url 'operations:search' %}">Cari tabung</a>
-      <a href="{% url 'operations:usage-log' %}">Log penggunaan</a>
-      {% if user.role == 'OPERATOR' or user.role == 'ADMIN' %}
-      <a href="{% url 'operations:dispatch' %}">Kirim</a>
-      <a href="{% url 'operations:return' %}">Kembali</a>
-      {% endif %}
-      {% if user.role == 'ADMIN' %}
-      <a href="{% url 'operations:exchange' %}">Tukar</a>
-      <a href="{% url 'operations:lost' %}">Hilang</a>
-      <a href="{% url 'operations:maintenance-start' %}">Maintenance</a>
-      <a href="{% url 'catalog:customers' %}">Pelanggan/relasi</a>
-      <a href="{% url 'catalog:gas-types' %}">Jenis gas</a>
-      <a href="{% url 'identity:user-roles' %}">Role akun</a>
-      {% endif %}
-      <span class="spacer"></span>
-      <details class="account-menu">
-        <summary>{{ user.username }} <span class="role-badge">{{ user.role }}</span></summary>
-        <div class="account-menu-content">
-          <form method="post" action="{% url 'identity:logout' %}" style="margin:0;">
-            {% csrf_token %}<button type="submit" class="btn secondary" style="margin:0;padding:0.3rem 0.7rem;">Keluar</button>
-          </form>
+{% include "_icons.html" %}
+<div class="gw-shell">
+<div class="gw-col">
+  {% if user.is_authenticated %}
+  <header class="nav">
+    {% block back %}{% endblock %}
+    <div class="nav-brand">{% block page_title %}Gas Wayan{% endblock %}</div>
+    <details class="gw-account" id="gw-account">
+      <summary class="gw-avatar" aria-label="Menu akun {{ user.username }}">{{ user.username|first }}</summary>
+      <div class="dialog gw-account-panel">
+        <div>
+          <div class="gw-strong">{{ user.username }}</div>
+          <span class="tag tag-neutral" style="margin-top:4px">{{ user.get_role_display }}</span>
         </div>
-      </details>
-    </nav>
-    {% endif %}
+        <div class="hr" style="margin:6px 0"></div>
+        <form method="post" action="{% url 'identity:logout' %}" style="margin:0">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary btn-block"><svg class="i"><use href="#i-log-out"></use></svg>Keluar</button>
+        </form>
+      </div>
+    </details>
+  </header>
+  {% endif %}
 
+  <main class="gw-main{% if not user.is_authenticated %} no-nav{% endif %}">
+    {% block messages %}
     {% if messages %}
-    <ul class="messages">
+    <div class="messages-stack">
       {% for message in messages %}
-      <li class="{{ message.tags }}">{{ message }}</li>
+      {% if message.level_tag == "error" %}
+      <div class="alert" role="alert"><svg class="i"><use href="#i-alert-circle"></use></svg><div>{{ message }}</div></div>
+      {% else %}
+      <div class="toast" role="status">
+        <svg class="i"><use href="#i-check-circle"></use></svg>
+        <div class="toast-text">{{ message }}</div>
+        <button type="button" class="btn btn-icon" aria-label="Tutup" onclick="this.parentElement.remove()"><svg class="i"><use href="#i-x"></use></svg></button>
+      </div>
+      {% endif %}
       {% endfor %}
-    </ul>
+    </div>
     {% endif %}
+    {% endblock %}
 
     {% block content %}{% endblock %}
-  </div>
+  </main>
+
+  {% if user.is_authenticated %}
+  {% with url_name=request.resolver_match.url_name %}
+  <nav class="gw-bottomnav" aria-label="Navigasi utama">
+    <a class="gw-navbtn" href="{% url 'identity:dashboard' %}"{% if url_name == "dashboard" %} aria-current="page"{% endif %}><svg class="i"><use href="#i-home"></use></svg>Dashboard</a>
+    <a class="gw-navbtn" href="{% url 'operations:search' %}"{% if url_name == "search" or url_name == "cylinder-detail" or url_name == "dispatch" or url_name == "return" %} aria-current="page"{% endif %}><svg class="i"><use href="#i-search"></use></svg>Cari</a>
+    <a class="gw-navbtn" href="{% url 'operations:usage-log' %}"{% if url_name == "usage-log" %} aria-current="page"{% endif %}><svg class="i"><use href="#i-history"></use></svg>Riwayat</a>
+    <button type="button" class="gw-navbtn" onclick="var d=document.getElementById('gw-account');d.open=!d.open;window.scrollTo(0,0)"><svg class="i"><use href="#i-user"></use></svg>Akun</button>
+  </nav>
+  {% endwith %}
+  {% endif %}
+</div>
+</div>
 </body>
 </html>

@@ -1,49 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Cari tabung - Gas Wayan{% endblock %}
+{% block back %}{% url 'identity:dashboard' as dash %}{% include "_back.html" with href=dash %}{% endblock %}
+{% block page_title %}Cari tabung{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Cari tabung</h1>
-  <form method="get">
-    <label for="id_serial_number">{{ form.serial_number.label }}</label>
-    {{ form.serial_number }}
-    <label for="id_customer">{{ form.customer.label }}</label>
-    {{ form.customer }}
-    <button type="submit">Cari</button>
+<div class="gw-page">
+  <p style="font-size:13px;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin:0">Cari berdasarkan nomor tabung atau nama pelanggan.</p>
+  <form method="get" class="gw-form">
+    <div class="field">
+      <label for="id_serial_number">{{ form.serial_number.label }}</label>
+      <input type="text" class="input" name="serial_number" id="id_serial_number" maxlength="64" placeholder="mis. 12345" value="{{ form.serial_number.value|default_if_none:'' }}" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="id_customer">{{ form.customer.label }}</label>
+      <input type="text" class="input" name="customer" id="id_customer" maxlength="255" placeholder="mis. Toko Makmur" value="{{ form.customer.value|default_if_none:'' }}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block btn-lg"><svg class="i"><use href="#i-search"></use></svg>Cari</button>
   </form>
-</div>
 
-{% if not_found_serial %}
-<div class="card">
-  <p class="error">Tabung dengan nomor tersebut tidak ditemukan.</p>
-</div>
-{% elif searched and page_obj.paginator.count == 0 %}
-<div class="card">
-  <p>Tidak ada hasil untuk pencarian ini.</p>
-</div>
-{% elif searched %}
-<div class="card table-wrap">
-  <table>
-    <thead>
-      <tr><th>Nomor tabung</th><th>Status</th><th>Kualitas data</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for cylinder in page_obj %}
-      <tr>
-        <td>{{ cylinder.serial_number }}</td>
-        <td><span class="status-badge status-{{ cylinder.status }}">{{ cylinder.status }}</span></td>
-        <td>
-          {% if cylinder.latest_cycle.data_quality_flag %}
-          <span class="quality-badge">{{ cylinder.latest_cycle.data_quality_flag }}</span>
-          {% else %}
-          <span class="help-text">-</span>
-          {% endif %}
-        </td>
-        <td><a href="{% url 'operations:cylinder-detail' cylinder.serial_number %}">Detail</a></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {# Hasil lama tidak pernah ditampilkan saat pencarian kosong (view mengembalikan queryset kosong). #}
+  {% if not_found_serial %}
+  <div class="alert" role="alert" style="font-size:15px"><svg class="i" style="width:18px;height:18px"><use href="#i-x-circle"></use></svg><div>Tabung dengan nomor tersebut tidak ditemukan.</div></div>
+  {% elif searched and page_obj.paginator.count == 0 %}
+  <div class="gw-empty" style="padding:32px 16px"><svg class="i" style="width:30px;height:30px"><use href="#i-inbox"></use></svg><p>Tidak ada hasil untuk pencarian ini.</p></div>
+  {% elif searched %}
+  <div class="gw-list">
+    {% for cylinder in page_obj %}
+    <a class="gw-result" href="{% url 'operations:cylinder-detail' cylinder.serial_number %}">
+      <div style="flex:1;min-width:0">
+        <div class="gw-serial">{{ cylinder.serial_number }}</div>
+        <div class="gw-badges" style="margin-top:6px">
+          {% include "_status_badge.html" with status=cylinder.status %}
+          {% with flag=cylinder.latest_cycle.data_quality_flag %}{% if flag %}{% include "_quality_badge.html" with flag=flag %}{% endif %}{% endwith %}
+        </div>
+      </div>
+      <svg class="i"><use href="#i-chevron-right"></use></svg>
+    </a>
+    {% endfor %}
+  </div>
   {% include "operations/_pagination.html" %}
+  {% else %}
+  <div class="gw-empty"><svg class="i"><use href="#i-search"></use></svg><p>Masukkan nomor seri atau nama pelanggan untuk mencari.</p></div>
+  {% endif %}
 </div>
-{% endif %}
 {% endblock %}

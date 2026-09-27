@@ -1,14 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Ubah riwayat siklus - Gas Wayan{% endblock %}
-{% block container_class %} narrow{% endblock %}
+{% block back %}{% url 'operations:cylinder-detail' cycle.cylinder.serial_number as detail_url %}{% include "_back.html" with href=detail_url history=True %}{% endblock %}
+{% block page_title %}Ubah riwayat siklus{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Ubah riwayat siklus {{ cycle.cylinder.serial_number }}</h1>
-  <p class="help-text">Perubahan dicatat sebagai koreksi; event lama tidak dihapus.</p>
-  <form method="post">{% csrf_token %}<input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
-    {% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="help-text">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}{% endfor %}
-    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
-    <button type="submit">Simpan koreksi</button>
+<div class="gw-page">
+  <div class="card muted">
+    <div class="overline">Tabung</div>
+    <div class="gw-serial md">{{ cycle.cylinder.serial_number }}</div>
+  </div>
+  <p class="field-help" style="margin:0">Perubahan dicatat sebagai koreksi; event lama tidak dihapus.</p>
+  <form method="post" class="gw-form">
+    {% csrf_token %}
+    <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+    {% for field in form %}{% include "_field.html" with field=field %}{% endfor %}
+    {% for error in form.non_field_errors %}
+    <div class="alert" role="alert"><svg class="i"><use href="#i-alert-circle"></use></svg><div>{{ error }}</div></div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Simpan koreksi</button>
+    <a class="btn btn-secondary btn-block" style="margin-top:-6px" href="{% url 'operations:cylinder-detail' cycle.cylinder.serial_number %}">Batal</a>
   </form>
 </div>
 {% endblock %}

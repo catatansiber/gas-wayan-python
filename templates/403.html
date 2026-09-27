@@ -1,9 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Akses ditolak - Gas Wayan{% endblock %}
+{% block back %}{% url 'identity:dashboard' as dash %}{% include "_back.html" with href=dash %}{% endblock %}
+{% block page_title %}Akses ditolak{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Akses ditolak</h1>
-  <p class="error">Role Anda tidak memiliki izin untuk membuka halaman ini.</p>
-  <p><a href="{% url 'identity:dashboard' %}">Kembali ke dashboard</a></p>
+<div style="padding:40px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px">
+  <div class="gw-denied-icon"><svg class="i"><use href="#i-shield-alert"></use></svg></div>
+  <h3 style="margin:0">Akses ditolak</h3>
+  <p style="font-size:13px;color:color-mix(in srgb, var(--color-text) 60%, transparent);max-width:280px;margin:0">
+    {% if user.is_authenticated %}Anda masuk sebagai <strong>{{ user.get_role_display }}</strong>. {% endif %}Role Anda tidak memiliki izin untuk membuka halaman ini.
+  </p>
+  <a class="btn btn-primary" style="margin-top:6px" href="{% url 'identity:dashboard' %}">Kembali ke dashboard</a>
 </div>
 {% endblock %}

@@ -1,20 +1,29 @@
 {% extends "base.html" %}
 {% block title %}Masuk - Gas Wayan{% endblock %}
-{% block container_class %} narrow{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Masuk</h1>
-  {% if form.errors %}
-    <p class="error">Nama pengguna atau kata sandi salah.</p>
-  {% endif %}
-  <form method="post">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:32px 24px">
+  <form method="post" class="gw-form" style="gap:28px">
     {% csrf_token %}
-    <label for="id_username">Nama pengguna</label>
-    <input type="text" name="username" id="id_username" autofocus required>
-    <label for="id_password">Kata sandi</label>
-    <input type="password" name="password" id="id_password" required>
+    <div>
+      <div class="gw-strong" style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent)">Gas Wayan</div>
+      <h1 style="margin-top:6px">Masuk</h1>
+      <p class="text-muted" style="margin:0">Sistem operasional tabung gas</p>
+    </div>
+
+    {% if form.errors %}
+    <div class="alert strong" role="alert"><svg class="i"><use href="#i-alert-circle"></use></svg><div>Nama pengguna atau kata sandi salah.</div></div>
+    {% endif %}
+
+    <div class="field">
+      <label for="id_username">Nama pengguna</label>
+      <input type="text" class="input" name="username" id="id_username" placeholder="mis. wayan.putra" autocomplete="username" autocapitalize="none" autofocus required>
+    </div>
+    <div class="field">
+      <label for="id_password">Kata sandi</label>
+      <input type="password" class="input" name="password" id="id_password" placeholder="••••••••" autocomplete="current-password" required>
+    </div>
     <input type="hidden" name="next" value="{{ next }}">
-    <button type="submit">Masuk</button>
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Masuk</button>
   </form>
 </div>
 {% endblock %}
