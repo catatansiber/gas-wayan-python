@@ -115,7 +115,7 @@ def _lock_cylinder(serial_number):
     try:
         return Cylinder.objects.select_for_update().get(serial_number=serial_number)
     except Cylinder.DoesNotExist:
-        raise CylinderNotFound(serial_number) from None
+        raise CylinderNotFound(f"Tabung {serial_number} tidak ditemukan.") from None
 
 
 def _lock_open_cycle(cylinder):
