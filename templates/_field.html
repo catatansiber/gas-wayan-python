@@ -1,0 +1,33 @@
+{# Satu field form Django dengan gaya design system. Parameter: field (BoundField), seg (opsional: ChoiceField sebagai pilihan segmen/chip). #}
+<div class="field">
+  {% if field.widget_type == "checkbox" %}
+  <label class="check" for="{{ field.id_for_label }}">{{ field }}<span class="box"></span>{{ field.label }}</label>
+  {% elif seg %}
+  <span class="field-label" id="{{ field.auto_id }}_label">{{ field.label }}</span>
+  <div class="seg" role="radiogroup" aria-labelledby="{{ field.auto_id }}_label">
+    {% for value, label in field.field.choices %}{% if value %}
+    <label class="seg-opt"><input type="radio" name="{{ field.html_name }}" value="{{ value }}"{% if field.value|stringformat:"s" == value|stringformat:"s" %} checked{% endif %}{% if field.field.required %} required{% endif %}>{{ label }}</label>
+    {% endif %}{% endfor %}
+  </div>
+  {% elif field.name == "serial_number" %}
+  {# Diisi dari ?serial_number= (tombol "Kirim tabung ini"/"Catat kembali" di detail tabung). #}
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  <input type="text" class="input" name="{{ field.html_name }}" id="{{ field.auto_id }}" maxlength="{{ field.field.max_length }}" placeholder="{{ field.field.widget.attrs.placeholder }}" value="{% firstof field.value request.GET.serial_number '' %}" autocomplete="off"{% if field.field.required %} required{% endif %}>
+  {% elif field.widget_type == "date" %}
+  {# Tanggal wajib pada form baru default ke hari ini (zona Asia/Makassar) supaya operator cukup sekali klik. #}
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  <input type="date" class="input" name="{{ field.html_name }}" id="{{ field.auto_id }}" value="{% if field.value.isoformat %}{{ field.value.isoformat }}{% elif field.value %}{{ field.value }}{% elif field.field.required and not field.form.is_bound %}{% now 'Y-m-d' %}{% endif %}"{% if field.field.required %} required{% endif %}>
+  {% elif field.widget_type == "select" %}
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  <select class="input" name="{{ field.html_name }}" id="{{ field.auto_id }}"{% if field.field.required %} required{% endif %}{% if field.field.disabled %} disabled{% endif %}>
+    {% for value, label in field.field.choices %}
+    <option value="{{ value }}"{% if value|stringformat:"s" == field.value|stringformat:"s" %} selected{% endif %}>{% if label == "---------" %}Pilih {{ field.label|lower }}…{% else %}{{ label }}{% endif %}</option>
+    {% endfor %}
+  </select>
+  {% else %}
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {{ field }}
+  {% endif %}
+  {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}
+  {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+</div>

@@ -1,82 +1,89 @@
 {% extends "base.html" %}
 {% load operation_labels %}
 {% block title %}Tabung {{ cylinder.serial_number }} - Gas Wayan{% endblock %}
+{% block back %}{% url 'operations:search' as search_url %}{% include "_back.html" with href=search_url history=True %}{% endblock %}
+{% block page_title %}Detail tabung{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Tabung {{ cylinder.serial_number }}</h1>
-  <p>
-    Status: <span class="status-badge status-{{ cylinder.status }}">{{ cylinder.status }}</span>
-  </p>
-  {% if active_cycle %}
-  <p>Siklus aktif: dikirim ke <strong>{{ active_cycle.customer.display_name }}</strong> pada
-     {{ active_cycle.sent_at|date:"d/m/Y" }}
-     {% if active_cycle.gas_type_at_dispatch %}({{ active_cycle.gas_type_at_dispatch.code }}){% endif %}.</p>
-  {% else %}
-  <p class="help-text">Tidak ada siklus aktif saat ini.</p>
-  {% endif %}
-</div>
+<div class="gw-page roomy">
+  <div class="card elev-sm" style="gap:10px">
+    <div class="gw-serial xl">{{ cylinder.serial_number }}</div>
+    <div class="gw-badges">{% include "_status_badge.html" with status=cylinder.status lg=True %}</div>
+    {% with flag=cylinder.latest_cycle.data_quality_flag %}{% if flag %}
+    <div>
+      <div class="overline xs">Kualitas data</div>
+      {% include "_quality_badge.html" with flag=flag lg=True %}
+    </div>
+    {% endif %}{% endwith %}
+    {% if active_cycle %}
+    <div class="hr" style="margin:4px 0"></div>
+    <div style="font-size:13px">Dikirim ke <strong>{{ active_cycle.customer.display_name }}</strong> pada {{ active_cycle.sent_at|date:"d/m/Y" }}{% if active_cycle.gas_type_at_dispatch %} ({{ active_cycle.gas_type_at_dispatch.code }}){% endif %}.</div>
+    {% endif %}
+    {% if user.role == "VIEWER" %}
+    <div class="text-muted" style="font-size:12px">Anda hanya dapat melihat data (role Viewer).</div>
+    {% elif cylinder.status == "LOST" %}
+    <div class="text-muted" style="font-size:12px">Tabung dilaporkan hilang - tidak dapat dikirim.</div>
+    {% elif cylinder.status == "MAINTENANCE" %}
+    <div class="text-muted" style="font-size:12px">Sedang dalam maintenance - tidak dapat dikirim.</div>
+    {% elif cylinder.status == "RETIRED" %}
+    <div class="text-muted" style="font-size:12px">Tabung telah dipensiunkan.</div>
+    {% endif %}
+  </div>
 
-<div class="card table-wrap">
-  <h2>Riwayat siklus (kirim/kembali)</h2>
-  {% if cycles_page.paginator.count == 0 %}
-  <p class="help-text">Belum ada riwayat.</p>
-  {% else %}
-  <table>
-    <thead>
-      <tr>
-        <th>Pelanggan</th><th>Gas</th><th>Kirim</th><th>Kembali</th><th>Status</th>
-        <th>Alasan tutup</th>{% if user.role == 'ADMIN' %}<th></th>{% endif %}
-      </tr>
-    </thead>
-    <tbody>
+  {% if user.role == "OPERATOR" or user.role == "ADMIN" %}
+  {% if cylinder.status == "AVAILABLE" %}
+  <a class="btn btn-primary btn-block btn-lg" href="{% url 'operations:dispatch' %}?serial_number={{ cylinder.serial_number|urlencode }}"><svg class="i"><use href="#i-send"></use></svg>Kirim tabung ini</a>
+  {% elif cylinder.status == "OUT" %}
+  <a class="btn btn-primary btn-block btn-lg" href="{% url 'operations:return' %}?serial_number={{ cylinder.serial_number|urlencode }}"><svg class="i"><use href="#i-corner-down-left"></use></svg>Catat kembali</a>
+  {% endif %}
+  {% endif %}
+
+  <div>
+    <h4 style="margin-bottom:8px">Riwayat siklus</h4>
+    {% if cycles_page.paginator.count == 0 %}
+    <p class="text-muted" style="font-size:13px">Belum ada riwayat.</p>
+    {% else %}
+    <div class="gw-list">
       {% for cycle in cycles_page %}
-      <tr>
-        <td>{{ cycle.customer.display_name }}</td>
-        <td>{{ cycle.gas_type_at_dispatch.code|default:"-" }}</td>
-        <td>{{ cycle.sent_at|date:"d/m/Y" }}</td>
-        <td>
-          {% if cycle.date_unknown %}
-          <span class="help-text">tanggal tidak diketahui</span>
-          {% elif cycle.returned_at %}
-          {{ cycle.returned_at|date:"d/m/Y" }}
-          {% else %}
-          <span class="help-text">belum kembali</span>
-          {% endif %}
-        </td>
-        <td>{{ cycle.status }}</td>
-        <td>{{ cycle.close_reason|default:"-" }}</td>
-        {% if user.role == 'ADMIN' %}<td><a href="{% url 'operations:correct-cycle' cycle.id %}">Ubah</a></td>{% endif %}
-      </tr>
+      <div class="gw-row stack close-{{ cycle.close_reason|default:'OPEN' }}" style="gap:3px">
+        <div class="gw-row-head" style="font-size:14px;font-weight:600">
+          <span>{{ cycle.customer.display_name }}</span>
+          <div class="gw-row-actions">
+            <span class="tag tag-neutral">{{ cycle.gas_type_at_dispatch.code|default:"-" }}</span>
+            {% if user.role == "ADMIN" %}
+            <a class="btn btn-icon btn-secondary sm" href="{% url 'operations:correct-cycle' cycle.id %}" aria-label="Ubah riwayat" title="Ubah"><svg class="i"><use href="#i-pencil"></use></svg></a>
+            <a class="btn btn-icon btn-secondary sm" href="{% url 'operations:delete-cycle-history' cycle.id %}" aria-label="Hapus riwayat" title="Hapus"><svg class="i"><use href="#i-trash"></use></svg></a>
+            {% endif %}
+          </div>
+        </div>
+        <div class="gw-meta">
+          Kirim {{ cycle.sent_at|date:"d/m/Y" }} &middot;
+          {% if cycle.status == "OPEN" %}Kembali belum kembali
+          {% else %}{% if cycle.close_reason == "EXCHANGED" %}Ditukar{% elif cycle.close_reason == "LOST" %}Hilang{% elif cycle.close_reason == "REVERSED" %}Dibatalkan{% else %}Kembali{% endif %}
+          {% if cycle.date_unknown %}tanggal tidak diketahui{% elif cycle.returned_at %}{{ cycle.returned_at|date:"d/m/Y" }}{% else %}-{% endif %}{% endif %}
+        </div>
+      </div>
       {% endfor %}
-    </tbody>
-  </table>
-  {% with page_obj=cycles_page page_param="cycles_page" %}
-  {% include "operations/_pagination.html" %}
-  {% endwith %}
-  {% endif %}
-</div>
+    </div>
+    <div style="margin-top:8px">{% with page_obj=cycles_page page_param="cycles_page" %}{% include "operations/_pagination.html" %}{% endwith %}</div>
+    {% endif %}
+  </div>
 
-<div class="card table-wrap">
-  <h2>Log status</h2>
-  <table>
-    <thead>
-      <tr><th>Waktu (Asia/Makassar)</th><th>Status</th><th>Sumber</th><th>Alasan</th></tr>
-    </thead>
-    <tbody>
+  <div>
+    <h4 style="margin-bottom:8px">Log status</h4>
+    <div class="gw-timeline">
       {% for event in events_page %}
-      <tr>
-        <td>{{ event.created_at|date:"d/m/Y H:i" }}</td>
-        <td>{{ event.event_type|event_label }}</td>
-        <td>{{ event.source }}</td>
-        <td>{{ event.reason|default:"-" }}</td>
-      </tr>
+      <div class="gw-event">
+        <div class="gw-event-dot"></div>
+        <div>
+          <div><strong>{{ event.event_type|event_label }}</strong> <span style="color:color-mix(in srgb, var(--color-text) 50%, transparent)">&middot; {{ event.source }}</span></div>
+          <div class="text-muted">{{ event.created_at|date:"d/m/Y H:i" }}{% if event.reason %} — {{ event.reason }}{% endif %}</div>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted" style="font-size:13px;margin:0">Belum ada log status.</p>
       {% endfor %}
-    </tbody>
-  </table>
-  {% with page_obj=events_page page_param="events_page" %}
-  {% include "operations/_pagination.html" %}
-  {% endwith %}
+    </div>
+    <div style="margin-top:8px">{% with page_obj=events_page page_param="events_page" %}{% include "operations/_pagination.html" %}{% endwith %}</div>
+  </div>
 </div>
-
-<p><a href="{% url 'operations:search' %}">&laquo; Kembali ke pencarian</a></p>
 {% endblock %}

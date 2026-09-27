@@ -1,11 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Hapus pelanggan/relasi - Gas Wayan{% endblock %}
-{% block container_class %} narrow{% endblock %}
+{% block back %}{% url 'catalog:customers' as list_url %}{% include "_back.html" with href=list_url %}{% endblock %}
+{% block page_title %}Pelanggan/relasi{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Hapus pelanggan/relasi</h1>
-  <p>Hapus <strong>{{ customer.display_name }}</strong>?</p>
-  <p class="help-text">Pelanggan yang sudah memiliki transaksi tidak dapat dihapus; nonaktifkan sebagai gantinya.</p>
-  <form method="post">{% csrf_token %}<button type="submit">Hapus</button> <a class="btn secondary" href="{% url 'catalog:customers' %}">Batal</a></form>
+<div class="dialog-page">
+  <div class="dialog" role="alertdialog" aria-labelledby="dlg-title" aria-describedby="dlg-body">
+    <div class="dialog-title" id="dlg-title">Hapus pelanggan/relasi?</div>
+    <div class="dialog-body" id="dlg-body">Yakin ingin menghapus <strong>{{ customer.display_name }}</strong>? Tindakan ini tidak dapat dibatalkan.</div>
+    <p class="field-help" style="margin:0">Pelanggan yang sudah memiliki transaksi tidak dapat dihapus; nonaktifkan sebagai gantinya.</p>
+    <form method="post" class="dialog-actions">
+      {% csrf_token %}
+      <a class="btn btn-secondary" href="{% url 'catalog:customers' %}">Batal</a>
+      <button type="submit" class="btn btn-primary">Hapus</button>
+    </form>
+  </div>
 </div>
 {% endblock %}

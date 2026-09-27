@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} - Gas Wayan{% endblock %}
-{% block container_class %} narrow{% endblock %}
+{% block back %}{% if request.resolver_match.url_name == "gas-type-create" %}{% url 'catalog:gas-types' as list_url %}{% else %}{% url 'catalog:customers' as list_url %}{% endif %}{% include "_back.html" with href=list_url %}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>{{ title }}</h1>
-  <form method="post">{% csrf_token %}
-    {% for field in form %}
-      <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
-      {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+<div class="gw-page">
+  <form method="post" class="gw-form">
+    {% csrf_token %}
+    {% for field in form %}{% include "_field.html" with field=field %}{% endfor %}
+    {% for error in form.non_field_errors %}
+    <div class="alert" role="alert"><svg class="i"><use href="#i-alert-circle"></use></svg><div>{{ error }}</div></div>
     {% endfor %}
-    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
-    <button type="submit">Simpan</button>
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Simpan</button>
   </form>
 </div>
 {% endblock %}

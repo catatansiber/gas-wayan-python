@@ -1,21 +1,39 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} - Gas Wayan{% endblock %}
-{% block container_class %} narrow{% endblock %}
+{% block back %}{% url 'identity:dashboard' as dash %}{% with url_name=request.resolver_match.url_name %}{% if request.GET.serial_number and url_name == "dispatch" or request.GET.serial_number and url_name == "return" %}{% url 'operations:cylinder-detail' request.GET.serial_number as detail_url %}{% include "_back.html" with href=detail_url %}{% elif url_name == "maintenance-start" or url_name == "maintenance-complete" %}{% include "_back.html" with href=dash|add:"#maintenance" %}{% else %}{% include "_back.html" with href=dash %}{% endif %}{% endwith %}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{# Pesan error (DomainError dari operations.services) ditampilkan tepat di atas tombol, bukan di atas halaman. #}
+{% block messages %}
+{% if messages %}<div class="messages-stack">{% for message in messages %}{% if message.level_tag != "error" %}<div class="toast" role="status"><svg class="i"><use href="#i-check-circle"></use></svg><div class="toast-text">{{ message }}</div></div>{% endif %}{% endfor %}</div>{% endif %}
+{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>{{ title }}</h1>
-  <form method="post">
+<div class="gw-page">
+  {% with url_name=request.resolver_match.url_name %}
+  {% if url_name == "maintenance-start" or url_name == "maintenance-complete" %}
+  <nav class="seg" aria-label="Jenis maintenance">
+    <a class="seg-opt" href="{% url 'operations:maintenance-start' %}"{% if url_name == "maintenance-start" %} aria-current="page"{% endif %}>Mulai</a>
+    <a class="seg-opt" href="{% url 'operations:maintenance-complete' %}"{% if url_name == "maintenance-complete" %} aria-current="page"{% endif %}>Selesaikan</a>
+  </nav>
+  {% endif %}
+  {% endwith %}
+  <form method="post" class="gw-form">
     {% csrf_token %}
     {% for field in form %}
-    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-    {{ field }}
-    {% if field.help_text %}<p class="help-text">{{ field.help_text }}</p>{% endif %}
-    {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+      {% if field.name == "confirm_new_cylinder" %}
+      {# Hanya diisi halaman preview setelah notice "tabung belum terdaftar" ditampilkan. #}
+      {% elif field.name == "gas_type_code" %}
+      {% include "_field.html" with field=field seg=True %}
+      {% else %}
+      {% include "_field.html" with field=field %}
+      {% endif %}
     {% endfor %}
-    {% if form.non_field_errors %}
-    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
-    {% endif %}
-    <button type="submit">Lanjut - lihat preview</button>
+    {% for error in form.non_field_errors %}
+    <div class="alert" role="alert"><svg class="i"><use href="#i-alert-circle"></use></svg><div>{{ error }}</div></div>
+    {% endfor %}
+    {% for message in messages %}{% if message.level_tag == "error" %}
+    <div class="alert" role="alert"><svg class="i"><use href="#i-alert-circle"></use></svg><div>{{ message }}</div></div>
+    {% endif %}{% endfor %}
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Tinjau &amp; konfirmasi</button>
   </form>
 </div>
 {% endblock %}

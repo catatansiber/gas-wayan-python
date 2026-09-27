@@ -1,21 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Konfirmasi {{ title }} - Gas Wayan{% endblock %}
-{% block container_class %} narrow{% endblock %}
+{% block back %}{% include "_back.html" with href=request.path history=True %}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Konfirmasi: {{ title }}</h1>
-  <p class="help-text">Periksa data berikut sebelum konfirmasi. Klik "Konfirmasi" hanya
-     sekali - sistem sudah aman terhadap klik ganda.</p>
+<div class="gw-page">
   {% if notice %}
-  <p class="notice">{{ notice }}</p>
+  <div class="alert" role="status"><svg class="i"><use href="#i-info"></use></svg><div>{{ notice }}</div></div>
   {% endif %}
-  <dl class="preview">
-    {% for label, value in preview_rows %}
-    <dt>{{ label }}</dt>
-    <dd>{{ value }}</dd>
-    {% endfor %}
-  </dl>
-  <form method="post">
+  <div class="card elev-sm">
+    <div class="card-kicker">Konfirmasi {{ title|lower }}</div>
+    <p style="font-size:12px;opacity:.8;margin:0">Periksa data berikut sebelum konfirmasi. Klik "Konfirmasi" hanya sekali - sistem sudah aman terhadap klik ganda.</p>
+    <dl class="gw-preview">
+      {% for label, value in preview_rows %}
+      <dt>{{ label }}</dt>
+      <dd>{{ value }}</dd>
+      {% endfor %}
+    </dl>
+  </div>
+  <form method="post" class="gw-form" style="gap:8px">
     {% csrf_token %}
     <input type="hidden" name="step" value="confirm">
     <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
@@ -23,14 +25,14 @@
     <input type="hidden" name="{{ name }}" value="{{ value }}">
     {% endfor %}
     {% if notice %}
-    {# Override eksplisit - user sudah melihat notice tabung baru di atas dan menekan
+    {% comment %}Override eksplisit - user sudah melihat notice tabung baru di atas dan menekan
        Konfirmasi, jadi izinkan dispatch_cylinder mendaftarkan tabung ini. QueryDict.get()
        memakai nilai TERAKHIR untuk key duplikat, jadi field ini sengaja ditaruh setelah
-       loop hidden_fields agar menang atas confirm_new_cylinder="False" bawaan form. #}
+       loop hidden_fields agar menang atas confirm_new_cylinder="False" bawaan form.{% endcomment %}
     <input type="hidden" name="confirm_new_cylinder" value="True">
     {% endif %}
-    <button type="submit">Konfirmasi</button>
-    <a href="javascript:history.back()" class="btn secondary">Batal, ubah data</a>
+    <button type="submit" class="btn btn-primary btn-block btn-lg" onclick="var b=this;setTimeout(function(){b.disabled=true},0)">Konfirmasi</button>
+    <a href="javascript:history.back()" class="btn btn-secondary btn-block">Batal, ubah data</a>
   </form>
 </div>
 {% endblock %}

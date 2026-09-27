@@ -1,8 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Jenis gas - Gas Wayan{% endblock %}
+{% block back %}{% url 'identity:dashboard' as dash %}{% include "_back.html" with href=dash %}{% endblock %}
+{% block page_title %}Jenis gas{% endblock %}
 {% block content %}
-<div class="card"><h1>Jenis gas</h1><a class="btn" href="{% url 'catalog:gas-type-create' %}">Tambah jenis gas</a></div>
-<div class="card table-wrap"><table><thead><tr><th>Kode</th><th>Status</th></tr></thead><tbody>
-{% for gas in gas_types %}<tr><td>{{ gas.code }}</td><td>{% if gas.is_active %}Aktif{% else %}Tidak aktif{% endif %}</td></tr>{% empty %}<tr><td colspan="2">Belum ada jenis gas.</td></tr>{% endfor %}
-</tbody></table></div>
+<div class="gw-page">
+  <a class="btn btn-primary btn-block" style="height:46px" href="{% url 'catalog:gas-type-create' %}"><svg class="i" style="width:16px;height:16px"><use href="#i-plus"></use></svg>Tambah jenis gas</a>
+  {% if gas_types %}
+  <div class="gw-list">
+    {% for gas in gas_types %}
+    <div class="gw-row">
+      <div class="gw-row-main gw-strong">{{ gas.code }}</div>
+      <span class="badge {% if gas.is_active %}badge-active{% else %}badge-inactive{% endif %}">{% if gas.is_active %}Aktif{% else %}Nonaktif{% endif %}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="gw-empty"><svg class="i"><use href="#i-flame"></use></svg><p>Belum ada jenis gas.</p></div>
+  {% endif %}
+  <p class="gw-footnote">Jenis gas lama tidak dihapus karena bisa dirujuk riwayat - nonaktifkan saja dari pilihan pengiriman baru.</p>
+</div>
 {% endblock %}

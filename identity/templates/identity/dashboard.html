@@ -1,12 +1,68 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Gas Wayan{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Selamat datang, {{ user.username }}</h1>
-  <p>Role: <span class="role-badge">{{ user.role }}</span></p>
-  <p>Tabung sedang dikirim dan belum kembali: <strong>{{ out_count }}</strong></p>
-  <p>Pilih salah satu menu di navigasi atas untuk mencari tabung, mengirim/mengembalikan, atau mengelola data.</p>
-  <p><a href="{% url 'operations:search' %}" class="btn">Cari tabung</a></p>
-  {% if user.role == 'ADMIN' %}<p><a href="{% url 'identity:user-roles' %}">Kelola role akun</a></p>{% endif %}
+<div class="gw-page roomy">
+  <div>
+    <h2 style="margin-bottom:2px">Halo, {{ user.username }}</h2>
+    <span class="tag tag-outline">{{ user.get_role_display }}</span>
+  </div>
+
+  <div class="card elev-sm">
+    <div class="card-kicker">Ringkasan</div>
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <div class="gw-strong" style="font-size:34px">{{ out_count }}</div>
+      <div style="font-size:13px;opacity:.75">tabung sedang dikirim, belum kembali</div>
+    </div>
+  </div>
+
+  {% if user.role == "OPERATOR" or user.role == "ADMIN" %}
+  <div class="gw-grid cols-3">
+    <a class="gw-tile" href="{% url 'operations:search' %}"><svg class="i"><use href="#i-search"></use></svg><span>Cari</span></a>
+    <a class="gw-tile" href="{% url 'operations:dispatch' %}"><svg class="i"><use href="#i-send"></use></svg><span>Kirim</span></a>
+    <a class="gw-tile" href="{% url 'operations:return' %}"><svg class="i"><use href="#i-corner-down-left"></use></svg><span>Kembali</span></a>
+  </div>
+  {% else %}
+  <div class="gw-grid">
+    <a class="gw-tile row" href="{% url 'operations:search' %}"><svg class="i"><use href="#i-search"></use></svg><span>Cari tabung</span></a>
+  </div>
+  <div class="card muted">
+    <div style="display:flex;gap:8px;font-size:12px;color:color-mix(in srgb, var(--color-text) 65%, transparent)"><svg class="i" style="width:15px;height:15px"><use href="#i-eye"></use></svg>Akun Viewer hanya dapat melihat data, tanpa aksi kirim/kembali.</div>
+  </div>
+  {% endif %}
+
+  {% if user.role == "ADMIN" %}
+  <div>
+    <div class="overline" style="margin-bottom:8px">Lainnya</div>
+    <div class="gw-grid cols-3">
+      <a class="gw-tile small" href="{% url 'operations:exchange' %}"><svg class="i"><use href="#i-repeat"></use></svg><span>Tukar</span></a>
+      <a class="gw-tile small" href="{% url 'operations:lost' %}"><svg class="i"><use href="#i-shield-alert"></use></svg><span>Hilang</span></a>
+      <a class="gw-tile small" href="#maintenance"><svg class="i"><use href="#i-wrench"></use></svg><span>Maintenance</span></a>
+      <a class="gw-tile small" href="{% url 'catalog:customers' %}"><svg class="i"><use href="#i-users"></use></svg><span>Relasi</span></a>
+      <a class="gw-tile small" href="{% url 'catalog:gas-types' %}"><svg class="i"><use href="#i-flame"></use></svg><span>Jenis gas</span></a>
+      <a class="gw-tile small" href="{% url 'identity:user-roles' %}"><svg class="i"><use href="#i-shield"></use></svg><span>Role akun</span></a>
+    </div>
+  </div>
+  <div class="gw-panel" id="maintenance" style="flex-direction:column;gap:8px">
+    <div class="overline">Maintenance</div>
+    <div class="gw-grid">
+      <a class="gw-tile row" href="{% url 'operations:maintenance-start' %}"><svg class="i"><use href="#i-wrench"></use></svg><span>Mulai maintenance</span></a>
+      <a class="gw-tile row" href="{% url 'operations:maintenance-complete' %}"><svg class="i"><use href="#i-check-circle"></use></svg><span>Selesaikan maintenance</span></a>
+    </div>
+  </div>
+  {% elif user.role == "OPERATOR" %}
+  {# Tautan tetap aktif: server menolak dengan 403 (identity.permissions.role_required) dan menampilkan layar Akses ditolak. #}
+  <div>
+    <div class="overline" style="margin-bottom:8px">Khusus Admin</div>
+    <div class="gw-grid cols-3">
+      <a class="gw-tile small locked" href="{% url 'operations:exchange' %}"><svg class="i"><use href="#i-lock"></use></svg><span>Tukar</span></a>
+      <a class="gw-tile small locked" href="{% url 'operations:lost' %}"><svg class="i"><use href="#i-lock"></use></svg><span>Hilang</span></a>
+      <a class="gw-tile small locked" href="{% url 'operations:maintenance-start' %}"><svg class="i"><use href="#i-lock"></use></svg><span>Maintenance</span></a>
+      <a class="gw-tile small locked" href="{% url 'catalog:customers' %}"><svg class="i"><use href="#i-lock"></use></svg><span>Relasi</span></a>
+      <a class="gw-tile small locked" href="{% url 'catalog:gas-types' %}"><svg class="i"><use href="#i-lock"></use></svg><span>Jenis gas</span></a>
+      <a class="gw-tile small locked" href="{% url 'identity:user-roles' %}"><svg class="i"><use href="#i-lock"></use></svg><span>Role akun</span></a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

@@ -1,11 +1,14 @@
+{# Parameter query lain (filter, paginator lain di halaman yang sama) ikut dibawa saat pindah halaman. #}
 {% if page_obj.paginator.num_pages > 1 %}
+{% with p=page_param|default:"page" %}
 <div class="pagination">
   {% if page_obj.has_previous %}
-  <a href="?{{ page_param|default:"page" }}={{ page_obj.previous_page_number }}">&laquo; Sebelumnya</a>
+  <a href="?{{ p }}={{ page_obj.previous_page_number }}{% for key, values in request.GET.lists %}{% if key != p %}{% for v in values %}&amp;{{ key|urlencode }}={{ v|urlencode }}{% endfor %}{% endif %}{% endfor %}">&laquo; Sebelumnya</a>
   {% endif %}
   <span class="current">Halaman {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-  <a href="?{{ page_param|default:"page" }}={{ page_obj.next_page_number }}">Berikutnya &raquo;</a>
+  <a href="?{{ p }}={{ page_obj.next_page_number }}{% for key, values in request.GET.lists %}{% if key != p %}{% for v in values %}&amp;{{ key|urlencode }}={{ v|urlencode }}{% endfor %}{% endif %}{% endfor %}">Berikutnya &raquo;</a>
   {% endif %}
 </div>
+{% endwith %}
 {% endif %}
