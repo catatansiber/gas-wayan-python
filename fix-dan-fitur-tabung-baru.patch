@@ -1,0 +1,441 @@
+From b3aa8081d7292a74028ba7e94c0f64a7142c702e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 27 Sep 2026 22:04:13 +0800
+Subject: [PATCH 1/2] Perbaiki pesan error CylinderNotFound dan NoActiveCycle
+
+Sebelumnya kedua exception ini di-raise dengan serial_number mentah
+sebagai argumen (tanpa format kalimat), sehingga messages.error() di
+views.py menampilkan pesan kosong seperti hanya "12345" ke user saat
+tabung tidak ditemukan atau tidak punya siklus aktif. Sekarang pesan
+dibentuk sebagai kalimat lengkap, konsisten dengan exception domain
+lain (mis. CylinderNotAvailable) di file yang sama.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NMtMKH3r6SPyh3vtBVYvUy
+---
+ operations/services.py | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/operations/services.py b/operations/services.py
+index be32b0f..83685ef 100644
+--- a/operations/services.py
++++ b/operations/services.py
+@@ -115,7 +115,7 @@ def _lock_cylinder(serial_number):
+     try:
+         return Cylinder.objects.select_for_update().get(serial_number=serial_number)
+     except Cylinder.DoesNotExist:
+-        raise CylinderNotFound(serial_number) from None
++        raise CylinderNotFound(f"Tabung {serial_number} tidak ditemukan.") from None
+ 
+ 
+ def _lock_open_cycle(cylinder):
+@@ -125,7 +125,9 @@ def _lock_open_cycle(cylinder):
+         .first()
+     )
+     if cycle is None:
+-        raise NoActiveCycle(cylinder.serial_number)
++        raise NoActiveCycle(
++            f"Tabung {cylinder.serial_number} tidak memiliki siklus aktif (belum dikirim atau sudah kembali)."
++        )
+     return cycle
+ 
+ 
+-- 
+2.43.0
+
+
+From 21fe17f353e6c8f20c643c76fc16c6a2e5db26ae Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 27 Sep 2026 22:16:23 +0800
+Subject: [PATCH 2/2] Daftarkan tabung baru otomatis saat Kirim jika nomor
+ belum terdaftar
+
+Sebelumnya nomor tabung yang belum ada di database selalu ditolak
+(CylinderNotFound) di alur Kirim tabung. Sekarang:
+
+- Halaman preview "Konfirmasi: Kirim tabung" menampilkan notice kuning
+  bila nomor tabung belum terdaftar, menjelaskan bahwa tabung tersebut
+  akan didaftarkan sebagai baru (status AVAILABLE) sekaligus dikirim.
+- Klik "Konfirmasi" pada preview itu mengirim confirm_new_cylinder=True,
+  yang diteruskan sebagai allow_new_cylinder ke dispatch_cylinder().
+- dispatch_cylinder() memakai _lock_or_register_cylinder(): kalau tabung
+  tidak ditemukan dan allow_create=True, buat Cylinder baru (get_or_create,
+  aman dari race condition) dan catat AuditLog aksi "cylinder.auto_register".
+- Default allow_new_cylinder tetap False, jadi pemanggilan service secara
+  langsung (mis. Telegram di F6 nanti) tetap menolak tabung tak dikenal
+  kecuali secara eksplisit mengizinkan - perilaku lama tidak berubah untuk
+  operasi lain (Kembali/Tukar/Hilang/Maintenance/Retire tetap error seperti
+  semula, karena logisnya butuh tabung yang sudah ada/sedang OUT).
+
+Field notice ditambahkan sebagai hook opsional (build_preview_notice) di
+OperationSpec generic, jadi operasi lain tidak terpengaruh sama sekali.
+
+Test baru: operations/tests.py (unit service - auto-register, audit log,
+tidak duplikat kalau tabung sudah ada, default tetap menolak) dan
+operations/test_views.py (integrasi - notice muncul di preview, tabung
+benar-benar terdaftar setelah Konfirmasi).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NMtMKH3r6SPyh3vtBVYvUy
+---
+ operations/forms.py                           |  5 ++
+ operations/services.py                        | 59 ++++++++++++++++-
+ .../operations/operation_preview.html         | 10 +++
+ operations/test_views.py                      | 44 +++++++++++++
+ operations/tests.py                           | 66 +++++++++++++++++++
+ operations/views.py                           | 21 ++++++
+ templates/base.html                           |  4 ++
+ 7 files changed, 206 insertions(+), 3 deletions(-)
+
+diff --git a/operations/forms.py b/operations/forms.py
+index 6ce7dfd..e9598d8 100644
+--- a/operations/forms.py
++++ b/operations/forms.py
+@@ -58,6 +58,11 @@ class DispatchForm(forms.Form):
+     )
+     gas_type_code = forms.ChoiceField(label="Jenis gas", error_messages={"required": REQUIRED_MSG})
+     sent_at = _date_field("Tanggal kirim")
++    # Diisi tersembunyi oleh operation_preview.html hanya ketika halaman preview sudah
++    # memberi tahu user bahwa nomor tabung ini belum terdaftar (lihat dispatch_view). Dipakai
++    # dispatch_cylinder() sebagai izin eksplisit untuk mendaftarkan tabung baru - tanpa flag
++    # ini, tabung yang tidak ditemukan tetap menghasilkan CylinderNotFound seperti biasa.
++    confirm_new_cylinder = forms.BooleanField(required=False)
+ 
+     def __init__(self, *args, **kwargs):
+         super().__init__(*args, **kwargs)
+diff --git a/operations/services.py b/operations/services.py
+index 83685ef..3fd5f67 100644
+--- a/operations/services.py
++++ b/operations/services.py
+@@ -118,6 +118,48 @@ def _lock_cylinder(serial_number):
+         raise CylinderNotFound(f"Tabung {serial_number} tidak ditemukan.") from None
+ 
+ 
++def cylinder_exists(serial_number):
++    """Read-only, dipakai dispatch_view untuk menampilkan notice "tabung baru" di halaman
++    preview SEBELUM user mengonfirmasi - tidak mengunci baris apa pun."""
++    return Cylinder.objects.filter(serial_number=serial_number).exists()
++
++
++def _lock_or_register_cylinder(serial_number, *, allow_create, actor, source):
++    """Sama seperti _lock_cylinder, tapi kalau allow_create=True dan tabung belum ada,
++    daftarkan sebagai Cylinder baru (status AVAILABLE) alih-alih menolak dengan
++    CylinderNotFound. Dipakai KHUSUS dispatch_cylinder (kirim tabung baru ke pelanggan
++    pertama kali) - operasi lain (kembali/tukar/hilang/maintenance/pensiun) tetap wajib
++    tabung yang sudah terdaftar, jadi tetap memanggil _lock_cylinder biasa.
++
++    allow_create hanya berlaku sebagai "izin", BUKAN otomatis membuat: user harus sudah
++    melihat notice di halaman preview dan menekan Konfirmasi (lihat DispatchForm.confirm_new_
++    cylinder) sebelum baris ini tereksekusi, supaya typo nomor tabung tidak diam-diam menjadi
++    master data baru."""
++    try:
++        return _lock_cylinder(serial_number), False
++    except CylinderNotFound:
++        if not allow_create:
++            raise
++        cylinder, created = Cylinder.objects.get_or_create(
++            serial_number=serial_number, defaults={"status": Cylinder.Status.AVAILABLE}
++        )
++        if created:
++            _write_audit(
++                actor,
++                source,
++                "cylinder.auto_register",
++                "Cylinder",
++                cylinder.id,
++                None,
++                {"serial_number": serial_number, "status": cylinder.status},
++                reason="Didaftarkan otomatis saat kirim - nomor belum ada di database.",
++            )
++            return cylinder, True
++        # Race: tabung dibuat oleh request lain di antara _lock_cylinder gagal dan
++        # get_or_create di sini - ambil lock yang benar sekarang, jalur normal.
++        return _lock_cylinder(serial_number), False
++
++
+ def _lock_open_cycle(cylinder):
+     cycle = (
+         Cycle.objects.select_for_update()
+@@ -126,7 +168,8 @@ def _lock_open_cycle(cylinder):
+     )
+     if cycle is None:
+         raise NoActiveCycle(
+-            f"Tabung {cylinder.serial_number} tidak memiliki siklus aktif (belum dikirim atau sudah kembali)."
++            f"Tabung {cylinder.serial_number} tidak memiliki siklus aktif "
++            "(belum dikirim atau sudah kembali)."
+         )
+     return cycle
+ 
+@@ -137,7 +180,15 @@ def _lock_open_cycle(cylinder):
+ 
+ 
+ def dispatch_cylinder(
+-    *, actor, serial_number, customer_id, gas_type_code, sent_at, idempotency_key, source="WEB"
++    *,
++    actor,
++    serial_number,
++    customer_id,
++    gas_type_code,
++    sent_at,
++    idempotency_key,
++    source="WEB",
++    allow_new_cylinder=False,
+ ):
+     _require_role(actor, OPERATOR_AND_ADMIN)
+     payload = {
+@@ -154,7 +205,9 @@ def dispatch_cylinder(
+         if not created:
+             return record.result_cycle
+ 
+-        cylinder = _lock_cylinder(serial_number)
++        cylinder, _newly_registered = _lock_or_register_cylinder(
++            serial_number, allow_create=allow_new_cylinder, actor=actor, source=source
++        )
+         if cylinder.status != Cylinder.Status.AVAILABLE:
+             raise CylinderNotAvailable(
+                 f"Tabung {serial_number} berstatus {cylinder.status}, tidak dapat dikirim."
+diff --git a/operations/templates/operations/operation_preview.html b/operations/templates/operations/operation_preview.html
+index a7b399b..ad645f7 100644
+--- a/operations/templates/operations/operation_preview.html
++++ b/operations/templates/operations/operation_preview.html
+@@ -6,6 +6,9 @@
+   <h1>Konfirmasi: {{ title }}</h1>
+   <p class="help-text">Periksa data berikut sebelum konfirmasi. Klik "Konfirmasi" hanya
+      sekali - sistem sudah aman terhadap klik ganda.</p>
++  {% if notice %}
++  <p class="notice">{{ notice }}</p>
++  {% endif %}
+   <dl class="preview">
+     {% for label, value in preview_rows %}
+     <dt>{{ label }}</dt>
+@@ -19,6 +22,13 @@
+     {% for name, value in hidden_fields.items %}
+     <input type="hidden" name="{{ name }}" value="{{ value }}">
+     {% endfor %}
++    {% if notice %}
++    {# Override eksplisit - user sudah melihat notice tabung baru di atas dan menekan
++       Konfirmasi, jadi izinkan dispatch_cylinder mendaftarkan tabung ini. QueryDict.get()
++       memakai nilai TERAKHIR untuk key duplikat, jadi field ini sengaja ditaruh setelah
++       loop hidden_fields agar menang atas confirm_new_cylinder="False" bawaan form. #}
++    <input type="hidden" name="confirm_new_cylinder" value="True">
++    {% endif %}
+     <button type="submit">Konfirmasi</button>
+     <a href="javascript:history.back()" class="btn secondary">Batal, ubah data</a>
+   </form>
+diff --git a/operations/test_views.py b/operations/test_views.py
+index af4c9ca..06f36b2 100644
+--- a/operations/test_views.py
++++ b/operations/test_views.py
+@@ -268,6 +268,50 @@ class InvalidInputTests(WebTestCaseMixin, TestCase):
+         self.assertEqual(response.status_code, 200)
+         self.assertContains(response, "tidak dapat dikirim")
+ 
++    def test_dispatch_new_serial_shows_notice_and_registers_on_confirm(self):
++        """Nomor tabung yang belum ada di database: preview menampilkan notice (bukan
++        menolak), dan Konfirmasi mendaftarkan tabung baru sekaligus mengirimkannya."""
++        self.client.force_login(self.operator)
++        self.assertFalse(Cylinder.objects.filter(serial_number="WEB-BARU-01").exists())
++
++        preview = self.client.post(
++            reverse("operations:dispatch"),
++            {
++                "serial_number": "WEB-BARU-01",
++                "customer": self.customer.id,
++                "gas_type_code": "O2",
++                "sent_at": "2025-01-01",
++            },
++        )
++        self.assertEqual(preview.status_code, 200)
++        self.assertContains(preview, "belum terdaftar")
++        # Tabung belum benar-benar dibuat hanya karena preview dilihat.
++        self.assertFalse(Cylinder.objects.filter(serial_number="WEB-BARU-01").exists())
++
++        confirm_payload = {
++            **dict(preview.context["hidden_fields"]),
++            "step": "confirm",
++            "idempotency_key": preview.context["idempotency_key"],
++            "confirm_new_cylinder": "True",
++        }
++        response = self.client.post(reverse("operations:dispatch"), confirm_payload)
++        self.assertRedirects(response, reverse("operations:cylinder-detail", args=["WEB-BARU-01"]))
++        cylinder = Cylinder.objects.get(serial_number="WEB-BARU-01")
++        self.assertEqual(cylinder.status, Cylinder.Status.OUT)
++
++    def test_dispatch_existing_serial_shows_no_notice(self):
++        self.client.force_login(self.operator)
++        preview = self.client.post(
++            reverse("operations:dispatch"),
++            {
++                "serial_number": "WEB-0001",
++                "customer": self.customer.id,
++                "gas_type_code": "O2",
++                "sent_at": "2025-01-01",
++            },
++        )
++        self.assertNotContains(preview, "belum terdaftar")
++
+ 
+ class SearchAndPaginationTests(WebTestCaseMixin, TestCase):
+     @classmethod
+diff --git a/operations/tests.py b/operations/tests.py
+index f2223a5..44f61aa 100644
+--- a/operations/tests.py
++++ b/operations/tests.py
+@@ -102,6 +102,72 @@ class DispatchTests(ServiceTestCaseMixin, TestCase):
+                 idempotency_key="k1",
+             )
+ 
++    def test_dispatch_unknown_cylinder_still_raises_when_allow_new_cylinder_false(self):
++        """allow_new_cylinder default-nya False - hanya True eksplisit yang mengizinkan
++        auto-registrasi, supaya perilaku lama (menolak) tetap jadi default aman."""
++        with self.assertRaises(CylinderNotFound):
++            services.dispatch_cylinder(
++                actor=self.operator,
++                serial_number="TIDAK-ADA",
++                customer_id=self.customer1.id,
++                gas_type_code=GasType.Code.O2,
++                sent_at=date(2026, 1, 10),
++                idempotency_key="k1",
++                allow_new_cylinder=False,
++            )
++
++    def test_dispatch_registers_new_cylinder_when_allowed(self):
++        self.assertFalse(Cylinder.objects.filter(serial_number="BARU-001").exists())
++
++        cycle = services.dispatch_cylinder(
++            actor=self.operator,
++            serial_number="BARU-001",
++            customer_id=self.customer1.id,
++            gas_type_code=GasType.Code.O2,
++            sent_at=date(2026, 1, 10),
++            idempotency_key="k-new-1",
++            allow_new_cylinder=True,
++        )
++
++        cylinder = Cylinder.objects.get(serial_number="BARU-001")
++        self.assertEqual(cylinder.status, Cylinder.Status.OUT)
++        self.assertEqual(cycle.cylinder_id, cylinder.id)
++        self.assertEqual(cycle.customer_id, self.customer1.id)
++        self.assertEqual(cycle.status, Cycle.Status.OPEN)
++
++        from audit.models import AuditLog
++
++        register_log = AuditLog.objects.filter(
++            action="cylinder.auto_register", entity_id=str(cylinder.id)
++        ).first()
++        self.assertIsNotNone(register_log)
++        self.assertEqual(register_log.actor_id, self.operator.id)
++
++        dispatch_log = AuditLog.objects.filter(
++            action="cylinder.dispatch", entity_id=str(cycle.id)
++        ).first()
++        self.assertIsNotNone(dispatch_log)
++
++    def test_dispatch_does_not_duplicate_register_when_cylinder_already_exists(self):
++        """allow_new_cylinder=True pada tabung yang SUDAH ada tidak boleh membuat audit
++        cylinder.auto_register - hanya tabung yang benar-benar baru yang dicatat begitu."""
++        from audit.models import AuditLog
++
++        services.dispatch_cylinder(
++            actor=self.operator,
++            serial_number=self.cylinder1.serial_number,
++            customer_id=self.customer1.id,
++            gas_type_code=GasType.Code.O2,
++            sent_at=date(2026, 1, 10),
++            idempotency_key="k-existing-1",
++            allow_new_cylinder=True,
++        )
++        self.assertFalse(
++            AuditLog.objects.filter(
++                action="cylinder.auto_register", entity_id=str(self.cylinder1.id)
++            ).exists()
++        )
++
+ 
+ class RetryIdempotencyTests(ServiceTestCaseMixin, TestCase):
+     """Bukti acceptance: 'ulang key yang sama' -> hasil awal dikembalikan, bukan transaksi baru."""
+diff --git a/operations/views.py b/operations/views.py
+index 7cbe65c..a0ff95f 100644
+--- a/operations/views.py
++++ b/operations/views.py
+@@ -155,6 +155,10 @@ class OperationSpec:
+     build_service_kwargs: Callable[[dict], dict]
+     build_preview_rows: Callable[[dict], list]
+     success_redirect: Callable[[dict], str]
++    # Opsional - dipakai HANYA oleh dispatch_view untuk notice "tabung belum terdaftar" di
++    # halaman preview. Operasi lain membiarkan ini None sehingga _operation_view berperilaku
++    # persis seperti sebelumnya.
++    build_preview_notice: Callable[[dict], str] | None = None
+ 
+ 
+ def _serialize_for_repost(form) -> dict[str, str]:
+@@ -195,6 +199,9 @@ def _operation_view(request, spec: OperationSpec):
+     if request.method == "POST":
+         form = spec.form_class(request.POST)
+         if form.is_valid():
++            notice = ""
++            if spec.build_preview_notice:
++                notice = spec.build_preview_notice(form.cleaned_data)
+             return render(
+                 request,
+                 "operations/operation_preview.html",
+@@ -203,6 +210,7 @@ def _operation_view(request, spec: OperationSpec):
+                     "preview_rows": spec.build_preview_rows(form.cleaned_data),
+                     "hidden_fields": _serialize_for_repost(form),
+                     "idempotency_key": str(uuid.uuid4()),
++                    "notice": notice,
+                 },
+             )
+         return render(
+@@ -217,6 +225,17 @@ def _gas_label(code):
+     return code or "-"
+ 
+ 
++def _dispatch_preview_notice(d):
++    serial = d["serial_number"].strip()
++    if services.cylinder_exists(serial):
++        return ""
++    return (
++        f'Tabung "{serial}" belum terdaftar di database. Klik "Konfirmasi" untuk '
++        "mendaftarkannya sebagai tabung baru (status Available) sekaligus mengirimkannya "
++        "ke pelanggan ini."
++    )
++
++
+ @role_required(*OPERATOR_AND_ADMIN)
+ def dispatch_view(request):
+     spec = OperationSpec(
+@@ -228,6 +247,7 @@ def dispatch_view(request):
+             "customer_id": d["customer"].id,
+             "gas_type_code": d["gas_type_code"],
+             "sent_at": d["sent_at"],
++            "allow_new_cylinder": d.get("confirm_new_cylinder", False),
+         },
+         build_preview_rows=lambda d: [
+             ("Nomor tabung", d["serial_number"].strip()),
+@@ -238,6 +258,7 @@ def dispatch_view(request):
+         success_redirect=lambda d: reverse(
+             "operations:cylinder-detail", args=[d["serial_number"].strip()]
+         ),
++        build_preview_notice=_dispatch_preview_notice,
+     )
+     return _operation_view(request, spec)
+ 
+diff --git a/templates/base.html b/templates/base.html
+index 855baaf..49edbd9 100644
+--- a/templates/base.html
++++ b/templates/base.html
+@@ -45,6 +45,10 @@
+     .btn.secondary { background: #fff; color: #1a1a1a; }
+     .error { color: var(--error); }
+     .help-text { color: var(--muted); font-size: 0.85rem; }
++    .notice {
++      background: #fff4e0; color: #8a5a00; border: 1px solid #f0d9a8;
++      border-radius: 6px; padding: 0.6rem 0.9rem; font-size: 0.9rem;
++    }
+     .messages { list-style: none; padding: 0; margin: 0 0 1rem; }
+     .messages li { padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 0.5rem; }
+     .messages li.success { background: #e6f4ea; color: var(--success); }
+-- 
+2.43.0
+
