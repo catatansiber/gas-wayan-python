@@ -3,12 +3,68 @@ Bahasa Indonesia, cepat, tanpa query lock) - keputusan bisnis sesungguhnya (cons
 role, idempotency) tetap ditegakkan `operations.services` (satu-satunya jalur mutasi)."""
 
 from django import forms
+from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils import timezone
 
 from catalog.models import Customer, GasType
 
 REQUIRED_MSG = "Wajib diisi."
 INVALID_DATE_MSG = "Tanggal tidak sah."
+
+
+class CustomerSearchField(forms.ModelChoiceField):
+    """Pilih pelanggan dari pencarian nama tanpa memuat dropdown panjang.
+
+    Nilai UUID tetap diterima agar payload halaman konfirmasi yang sudah dibuat tetap valid.
+    Saat operator mengetik nama, setiap kata harus ada pada nama pelanggan atau aliasnya.
+    Hasil yang tidak unik sengaja ditolak supaya transaksi tidak dikirim ke pelanggan keliru.
+    """
+
+    default_error_messages = {
+        "required": REQUIRED_MSG,
+        "invalid_choice": "Pelanggan tidak ditemukan.",
+        "ambiguous": (
+            "Ditemukan lebih dari satu pelanggan. Tambahkan kata pencarian atau pilih dari daftar."
+        ),
+    }
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault(
+            "widget",
+            forms.TextInput(
+                attrs={
+                    "class": "input",
+                    "list": "customer-options",
+                    "placeholder": "Ketik nama pelanggan…",
+                    "autocomplete": "off",
+                }
+            ),
+        )
+        super().__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+
+        value = str(value).strip()
+        try:
+            return self.queryset.get(pk=value)
+        except (Customer.DoesNotExist, ValidationError, ValueError, TypeError):
+            pass
+
+        matches = self.queryset
+        for term in value.split():
+            matches = matches.filter(
+                Q(display_name__icontains=term) | Q(aliases__raw_value__icontains=term)
+            )
+        matches = matches.distinct()
+        count = matches.count()
+        if count == 1:
+            return matches.first()
+        if count > 1:
+            raise forms.ValidationError(self.error_messages["ambiguous"], code="ambiguous")
+        raise forms.ValidationError(self.error_messages["invalid_choice"], code="invalid_choice")
 
 
 def _date_field(label, required=True, help_text=""):
@@ -51,10 +107,10 @@ class SearchForm(forms.Form):
 
 class DispatchForm(forms.Form):
     serial_number = _serial_field()
-    customer = forms.ModelChoiceField(
+    customer = CustomerSearchField(
         label="Pelanggan",
         queryset=Customer.objects.filter(is_active=True).order_by("display_name"),
-        error_messages={"required": REQUIRED_MSG, "invalid_choice": "Pelanggan tidak ditemukan."},
+        help_text="Ketik satu atau beberapa kata, lalu pilih pelanggan dari daftar.",
     )
     gas_type_code = forms.ChoiceField(label="Jenis gas", error_messages={"required": REQUIRED_MSG})
     sent_at = _date_field("Tanggal kirim")
@@ -89,10 +145,9 @@ class ReturnForm(forms.Form):
 class ExchangeForm(forms.Form):
     old_serial_number = _serial_field("Nomor tabung lama")
     new_serial_number = _serial_field("Nomor tabung pengganti")
-    customer = forms.ModelChoiceField(
+    customer = CustomerSearchField(
         label="Pelanggan/relasi",
         queryset=Customer.objects.filter(is_active=True).order_by("display_name"),
-        error_messages={"required": REQUIRED_MSG, "invalid_choice": "Pelanggan tidak ditemukan."},
         help_text="Harus sesuai dengan relasi pada tabung lama yang masih dikirim.",
     )
     exchanged_at = _date_field("Tanggal tukar")
@@ -166,7 +221,7 @@ class ReverseDispatchForm(forms.Form):
 
 
 class CycleCorrectionForm(forms.Form):
-    customer = forms.ModelChoiceField(
+    customer = CustomerSearchField(
         label="Pelanggan/relasi",
         queryset=Customer.objects.filter(is_active=True).order_by("display_name"),
     )
