@@ -12,6 +12,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Case, DateField, DurationField, ExpressionWrapper, F, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -98,12 +99,11 @@ def cylinder_detail(request, serial_number):
 
 @login_required
 def usage_log(request):
-    cycles = Cycle.objects.select_related("cylinder", "customer", "gas_type_at_dispatch").order_by(
-        "-sent_at", "-created_at"
-    )
+    cycles = Cycle.objects.select_related("cylinder", "customer", "gas_type_at_dispatch")
     serial = request.GET.get("serial_number", "").strip()
     customer = request.GET.get("customer", "").strip()
     status = request.GET.get("status", "").strip()
+    sort_duration = request.GET.get("sort_duration", "").strip()
     if serial:
         cycles = cycles.filter(cylinder__serial_number=serial)
     if customer:
@@ -122,6 +122,19 @@ def usage_log(request):
             close_reason=Cycle.CloseReason.RETURNED,
             returned_at__lt=cutoff,
         )
+    if sort_duration in {"duration_asc", "duration_desc"}:
+        end_date = Case(
+            When(returned_at__isnull=False, then=F("returned_at")),
+            default=Value(datetime.date.today()),
+            output_field=DateField(),
+        )
+        duration_order = "duration" if sort_duration == "duration_asc" else "-duration"
+        cycles = cycles.annotate(
+            duration=ExpressionWrapper(end_date - F("sent_at"), output_field=DurationField())
+        ).order_by(duration_order, "-sent_at")
+    else:
+        sort_duration = ""
+        cycles = cycles.order_by("-sent_at", "-created_at")
     page_obj = Paginator(cycles, 30).get_page(request.GET.get("page"))
     today = datetime.date.today()
     for cycle in page_obj:
@@ -135,6 +148,7 @@ def usage_log(request):
             "customer_query": customer,
             "status_query": status,
             "include_archive": include_archive,
+            "sort_duration": sort_duration,
         },
     )
 

@@ -337,6 +337,58 @@ class SearchAndPaginationTests(WebTestCaseMixin, TestCase):
         )
         self.assertContains(response, "Tidak ada hasil untuk pencarian ini.")
 
+    def test_customer_search_accepts_multiple_words(self):
+        self.client.force_login(self.operator)
+        response = self.client.post(
+            reverse("operations:dispatch"),
+            {
+                "serial_number": "WEB-0001",
+                "customer": "Pelanggan Web",
+                "gas_type_code": "O2",
+                "sent_at": "2025-01-01",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Konfirmasi")
+
+    def test_customer_search_shows_suggestions(self):
+        self.client.force_login(self.operator)
+        response = self.client.get(reverse("operations:dispatch"))
+        self.assertContains(response, 'list="customer-options"')
+        self.assertContains(response, "Pelanggan Web Uji")
+
+    def test_usage_log_sorts_by_duration(self):
+        customer = Customer.objects.create(display_name="Pelanggan Durasi")
+        shorter = Cylinder.objects.create(serial_number="DURASI-CEPAT")
+        longer = Cylinder.objects.create(serial_number="DURASI-LAMA")
+        Cycle.objects.create(
+            cylinder=shorter,
+            customer=customer,
+            status=Cycle.Status.CLOSED,
+            sent_at=date(2025, 1, 1),
+            returned_at=date(2025, 1, 2),
+            close_reason=Cycle.CloseReason.RETURNED,
+        )
+        Cycle.objects.create(
+            cylinder=longer,
+            customer=customer,
+            status=Cycle.Status.CLOSED,
+            sent_at=date(2025, 1, 1),
+            returned_at=date(2025, 1, 10),
+            close_reason=Cycle.CloseReason.RETURNED,
+        )
+
+        self.client.force_login(self.viewer)
+        response = self.client.get(
+            reverse("operations:usage-log"),
+            {"sort_duration": "duration_desc", "include_archive": "1"},
+        )
+        self.assertEqual(
+            [cycle.cylinder.serial_number for cycle in response.context["page_obj"]][:2],
+            ["DURASI-LAMA", "DURASI-CEPAT"],
+        )
+        self.assertContains(response, "durasi 9 hari")
+
     def test_server_side_pagination_second_page(self):
         customer = Customer.objects.create(display_name="Pelanggan Paginasi")
         cylinders = [Cylinder.objects.create(serial_number=f"PAG-{i:04d}") for i in range(25)]

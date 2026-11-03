@@ -24,6 +24,14 @@
     <option value="{{ value }}"{% if value|stringformat:"s" == field.value|stringformat:"s" %} selected{% endif %}>{% if label == "---------" %}Pilih {{ field.label|lower }}…{% else %}{{ label }}{% endif %}</option>
     {% endfor %}
   </select>
+  {% elif field.name == "customer" and field.widget_type == "text" %}
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {{ field }}
+  <datalist id="customer-options">
+    {% for customer in field.field.queryset %}
+    <option value="{{ customer.display_name }}"></option>
+    {% endfor %}
+  </datalist>
   {% else %}
   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
   {{ field }}

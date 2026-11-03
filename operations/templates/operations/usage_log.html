@@ -14,6 +14,12 @@
       <label class="seg-opt"><input type="radio" name="status" value="DIKIRIM"{% if status_query == "DIKIRIM" %} checked{% endif %} onchange="this.form.submit()">Dikirim</label>
       <label class="seg-opt"><input type="radio" name="status" value="KEMBALI"{% if status_query == "KEMBALI" %} checked{% endif %} onchange="this.form.submit()">Kembali</label>
     </div>
+    <label class="sr-only" for="id_sort_duration">Urutkan berdasarkan durasi</label>
+    <select class="input" id="id_sort_duration" name="sort_duration" onchange="this.form.submit()">
+      <option value=""{% if not sort_duration %} selected{% endif %}>Urutkan: terbaru dikirim</option>
+      <option value="duration_desc"{% if sort_duration == "duration_desc" %} selected{% endif %}>Durasi: terlama</option>
+      <option value="duration_asc"{% if sort_duration == "duration_asc" %} selected{% endif %}>Durasi: tercepat</option>
+    </select>
     <label class="check sm"><input type="checkbox" name="include_archive" value="1"{% if include_archive %} checked{% endif %} onchange="this.form.submit()"><span class="box"></span>Tampilkan arsip (&gt;1 tahun)</label>
     <button type="submit" class="btn btn-secondary btn-block"><svg class="i"><use href="#i-search"></use></svg>Terapkan filter</button>
   </form>
@@ -35,7 +41,7 @@
         </div>
       </div>
       <div style="font-size:13px">{{ cycle.customer.display_name }}</div>
-      <div class="text-muted" style="font-size:12px">{{ cycle.gas_type_at_dispatch.code|default:"-" }} &middot; kirim {{ cycle.sent_at|date:"d/m/Y" }} &middot; kembali {% if cycle.returned_at %}{{ cycle.returned_at|date:"d/m/Y" }}{% else %}-{% endif %}{% if cycle.status == "OPEN" %} &middot; {{ cycle.days_out }} hari di luar{% endif %}</div>
+      <div class="text-muted" style="font-size:12px">{{ cycle.gas_type_at_dispatch.code|default:"-" }} &middot; kirim {{ cycle.sent_at|date:"d/m/Y" }} &middot; kembali {% if cycle.returned_at %}{{ cycle.returned_at|date:"d/m/Y" }}{% else %}-{% endif %} &middot; durasi {{ cycle.days_out }} hari</div>
     </div>
     {% endfor %}
   </div>
