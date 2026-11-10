@@ -53,8 +53,16 @@ class CustomerSearchField(forms.ModelChoiceField):
         except (Customer.DoesNotExist, ValidationError, ValueError, TypeError):
             pass
 
+        # Nama yang persis sama (abaikan huruf besar/kecil dan spasi ganda) menang atas nama
+        # lain yang hanya memuatnya, mis. "YONO BAJA" vs "YONO BAJA RINGAN". Bila nama persis
+        # sama dimiliki lebih dari satu pelanggan, tetap ambigu dan jatuh ke pencarian kata.
+        terms = value.split()
+        exact = self.queryset.filter(display_name__iexact=" ".join(terms))
+        if exact.count() == 1:
+            return exact.first()
+
         matches = self.queryset
-        for term in value.split():
+        for term in terms:
             matches = matches.filter(
                 Q(display_name__icontains=term) | Q(aliases__raw_value__icontains=term)
             )
