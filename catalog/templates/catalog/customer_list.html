@@ -5,6 +5,13 @@
 {% block content %}
 <div class="gw-page">
   <a class="btn btn-primary btn-block" style="height:46px" href="{% url 'catalog:customer-create' %}"><svg class="i" style="width:16px;height:16px"><use href="#i-plus"></use></svg>Tambah pelanggan/relasi</a>
+  <form method="get" class="gw-form" role="search">
+    <div class="field">
+      <label for="id_q">Cari pelanggan/relasi</label>
+      <input type="search" class="input" name="q" id="id_q" maxlength="255" placeholder="Nama, alias, atau telepon" value="{{ q }}" autocomplete="off">
+    </div>
+    <button type="submit" class="btn btn-secondary btn-block"><svg class="i"><use href="#i-search"></use></svg>Cari</button>
+  </form>
   {% if customers %}
   <div class="gw-list">
     {% for customer in customers %}
@@ -20,7 +27,7 @@
     {% endfor %}
   </div>
   {% else %}
-  <div class="gw-empty"><svg class="i"><use href="#i-users"></use></svg><p>Belum ada pelanggan/relasi.</p></div>
+  <div class="gw-empty"><svg class="i"><use href="#i-users"></use></svg><p>{% if q %}Tidak ada pelanggan/relasi yang cocok dengan "{{ q }}".{% else %}Belum ada pelanggan/relasi.{% endif %}</p></div>
   {% endif %}
 </div>
 {% endblock %}

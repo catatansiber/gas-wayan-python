@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -11,7 +12,18 @@ from .models import Customer, GasType
 
 @role_required(Role.ADMIN)
 def customer_list(request):
-    return render(request, "catalog/customer_list.html", {"customers": Customer.objects.all()})
+    query = " ".join(request.GET.get("q", "").split())[:255]
+    customers = Customer.objects.all()
+    # Setiap kata harus cocok dengan nama, alias, atau telepon (urutan kata bebas).
+    for term in query.split():
+        customers = customers.filter(
+            Q(display_name__icontains=term)
+            | Q(phone_number__icontains=term)
+            | Q(aliases__raw_value__icontains=term)
+        )
+    if query:
+        customers = customers.distinct()
+    return render(request, "catalog/customer_list.html", {"customers": customers, "q": query})
 
 
 @role_required(Role.ADMIN)
